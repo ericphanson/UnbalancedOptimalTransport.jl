@@ -61,10 +61,39 @@ end
             result = OT_convex(D, a, b, ϵ; solver = solver, verbose = true)
 
             @test OT!(D, a, b, ϵ) ≈ result.optimal_value rtol = 1e-3 atol = 1e-3
+
+            if D == KL(1.0)
+                unbalanced_sinkhorn!(D, a, b, ϵ; tol=1e-8, max_iters=10^6)
+                coupling_sinkhorn = optimal_coupling(a, b, ϵ)
+                @test result.optimal_coupling ≈ coupling_sinkhorn rtol=1e-2 atol=1e-2
+                @show (D, ϵ)
+                @show norm(result.optimal_coupling - coupling_sinkhorn)
+                @show norm(result.optimal_coupling - coupling_sinkhorn)/max(norm(result.optimal_coupling), norm(coupling_sinkhorn))
+            end
             
         end
     end
 
+    @testset "Optimal coupling" begin
+        for ϵ ∈ (0.1, 1.0), D in TEST_DIVERGENCES
+            if D isa Balanced
+                a, b = balanced_measures(4, 3, 1; scale = 100.0)
+            else
+                a = rand_measure(4, 1; scale = 100.0)
+                b = rand_measure(3, 1; scale = 100.0)
+            end
+
+            if D isa RG
+                sc = rand() + 0.5
+                b = DiscreteMeasure(sc * sum(a.density) * b.density / sum(b.density), b.set)
+            end
+
+            OT_val = OT!(D, a, b, ϵ)
+            π = optimal_coupling(a, b, ϵ)
+            obj = objective(π, D, a, b, ϵ)
+            @test OT_val ≈ obj rtol=1e-4
+        end
+    end
 
     @testset "Allocations" begin
         a = rand_measure(2, 2; static = true)

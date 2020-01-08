@@ -12,12 +12,13 @@ DiscreteMeasure
 
 ## Functions
 
-This package provides two functions which act on [`DiscreteMeasure`](@ref)'s
+This package provides three functions which act on [`DiscreteMeasure`](@ref)'s
 to calculate quantities of interest:
 
 ```@docs
 OT!
 sinkhorn_divergence!
+optimal_coupling
 ```
 
 ## Sinkhorn's algorithm
