@@ -189,38 +189,3 @@ sinkhorn_divergence!(
     ϵ = 1e-1;
     kwargs...,
 ) = _sinkhorn_divergence!(D, a, b, ϵ; kwargs...)
-
-# This doesn't pass tests, I'm not entirely sure why.
-# I don't think the problem is with the implementation
-# of Sinkhorn's algorithm, because they they agree with
-# the optimization formulation.
-# """
-#     function optimal_coupling(
-#         a::DiscreteMeasure,
-#         b::DiscreteMeasure,
-#         ϵ=1e-1;
-#         C = (x, y) -> norm(x - y),
-#     ) -> Matrix
-
-# Computes the optimal coupling between `a` and `b` using the optimal dual
-# potentials, the regularization parameter `ϵ`, and the cost function `C`. One of
-# [`unbalanced_sinkhorn!`](@ref) or [`OT!`](@ref) or
-# [`sinkhorn_divergence!`](@ref) must be called first to set the optimal dual
-# potentials, with the same choice of `ϵ` and `C`. This function implements Prop.
-# 6 of [[SFVTP19](@ref)].
-# """
-# function optimal_coupling(
-#     a::DiscreteMeasure,
-#     b::DiscreteMeasure,
-#     ϵ = 1e-1;
-#     C = (x, y) -> norm(x - y),
-# )
-#     f = a.dual_potential
-#     g = b.dual_potential
-#     x = a.set
-#     y = b.set
-#     return [
-#         exp((f[i] + g[j] - C(x[i], y[j])) / ϵ)
-#         for i in eachindex(a.density), j in eachindex(b.density)
-#     ]
-# end
