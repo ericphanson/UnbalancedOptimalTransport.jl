@@ -107,11 +107,11 @@ end
 
         a = rand_measure(100, 2; static = true)
         b = rand_measure(80, 2; static = true)
-        @test @allocated(OT!(KL(), a, b)) <= 32
+        @test @allocated(OT!(KL(), a, b)) <= (VERSION < v"1.3" ? 100 : 32)
 
         a = rand_measure(1000, 2; static = true)
         b = rand_measure(800, 2; static = true)
-        @test @allocated(OT!(KL(), a, b)) <= 32
+        @test @allocated(OT!(KL(), a, b)) <= (VERSION < v"1.3" ? 100 : 32)
     end
 
     @testset "Prop. 12: Optimized KL-Sinkhorn divergence method" begin
@@ -181,7 +181,7 @@ end
             sd_a1 = sinkhorn_divergence!(D, a_1, b, ϵ; tol = 1e-5)
             sd_a2 = sinkhorn_divergence!(D, a_2, b, ϵ; tol = 1e-5)
             sd = sinkhorn_divergence!(D, a, b, ϵ; tol = 1e-5)
-            @test all(>(0), (sd_b1, sd_b2, sd_a1, sd_a2, sd)) # positive definite
+            @test all(x -> x>0, (sd_b1, sd_b2, sd_a1, sd_a2, sd)) # positive definite
             @test λ * sd_a1 + (1 - λ) * sd_a2 >= sd # convexity in a
             @test λ * sd_b1 + (1 - λ) * sd_b2 >= sd # convexity in b
 
