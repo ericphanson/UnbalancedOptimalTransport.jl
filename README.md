@@ -5,7 +5,6 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://ericphanson.github.io/UnbalancedOptimalTransport.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://ericphanson.github.io/UnbalancedOptimalTransport.jl/dev)
 
-
 This package provides an MIT license, dependency-free implementation of
 Algorithm 1 of "Sinkhorn Divergences for Unbalanced Optimal Transport"
 [[SFVTP19](http://arxiv.org/abs/1910.12958)], which allows calculation of the
@@ -18,7 +17,6 @@ of the quantities computed by this package.
 
 While the code is generic, it is not currently written to dispatch to BLAS or
 non-scalar GPU operations, although such contributions would be welcomed.
-
 
 # Related packages
 

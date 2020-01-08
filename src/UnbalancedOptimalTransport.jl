@@ -1,3 +1,11 @@
+"""
+This package provides an MIT license, dependency-free implementation of
+Algorithm 1 of "Sinkhorn Divergences for Unbalanced Optimal Transport" [SFVTP19
+(http://arxiv.org/abs/1910.12958)], which allows calculation of the optimal
+transport and Sinkhorn divergence between two positive measures (with possibly
+different total mass), where mass creation and destruction is penalized by one
+of several possible φ-divergences.
+"""
 module UnbalancedOptimalTransport
 
 using LinearAlgebra: norm
