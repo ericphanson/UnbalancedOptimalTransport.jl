@@ -54,7 +54,6 @@ function unbalanced_sinkhorn!(
 )
     if D isa Balanced && warn && sum(a.density) ≉ sum(b.density)
         @warn "Should have `sum(a.density) ≈ sum(b.density)` for `D==Balanced()`"
-        error("$(sum(a.density) - sum(b.density))")
     end
 
     initialize_dual_potential!(D, a)
@@ -99,7 +98,6 @@ function unbalanced_sinkhorn!(
         end
     end
 
-    iters == max_iters && error("$(D), $(eltype(a))")
     if warn && iters == max_iters
         @warn "Maximum iterations ($max_iters) reached" max_residual
     end
