@@ -38,6 +38,7 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1.0'
+      - run: ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
       - run: julia --project=docs -e '
           using Pkg;
           Pkg.develop(PackageSpec(; path=pwd()));
