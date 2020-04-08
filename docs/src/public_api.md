@@ -18,7 +18,7 @@ to calculate quantities of interest:
 ```@docs
 OT!
 sinkhorn_divergence!
-optimal_coupling
+optimal_coupling!
 ```
 
 ## Sinkhorn's algorithm

@@ -62,7 +62,7 @@ We model these penalties as a $\varphi$-divergence $D_\varphi$, which are
 defined in terms of a function $\varphi : \mathbb{R}_+ \to \mathbb{R}_+$ as
 
 ```math
-D_\varphi(u \| v) := \sum_{z \in Z} \varphi( \frac{u(z)}{v(z)} ) b(z)
+D_\varphi(u \| v) := \sum_{z \in Z} \varphi\left( \frac{u(z)}{v(z)} \right) b(z)
 ```
 
 where $Z$ is a finite set, and $u : Z \to \mathbb{R}_+$ and $v : Z \to

@@ -54,7 +54,6 @@ function unbalanced_sinkhorn!(
 )
     if D isa Balanced && warn && sum(a.density) ≉ sum(b.density)
         @warn "Should have `sum(a.density) ≈ sum(b.density)` for `D==Balanced()`"
-        error("$(sum(a.density) - sum(b.density))")
     end
 
     initialize_dual_potential!(D, a)
@@ -99,7 +98,6 @@ function unbalanced_sinkhorn!(
         end
     end
 
-    iters == max_iters && error("$(D), $(eltype(a))")
     if warn && iters == max_iters
         @warn "Maximum iterations ($max_iters) reached" max_residual
     end
@@ -191,7 +189,7 @@ sinkhorn_divergence!(
 ) = _sinkhorn_divergence!(D, a, b, ϵ; kwargs...)
 
 """
-    function optimal_coupling(
+    function optimal_coupling!(
         D::AbstractDivergence,
         a::DiscreteMeasure,
         b::DiscreteMeasure,
@@ -204,27 +202,28 @@ Computes the optimal coupling between `a` and `b` using the optimal dual
 potentials, the regularization parameter `ϵ`, and the cost function `C`.
 
 If `dual_potentials_populated = false`, [`unbalanced_sinkhorn!`](@ref) is
-called to populate the dual potentials, using the divergence `D`.
+called to populate the dual potentials of `a` and `b`, using the divergence `D`.
 If `dual_potentials_populated = true`, one of [`unbalanced_sinkhorn!`](@ref)
 or [`OT!`](@ref) or [`sinkhorn_divergence!`](@ref) must be called first to
-set the optimal dual potentials, with the same choice of `ϵ` and `C`.
+set the optimal dual potentials, with the same choice of `ϵ` and `C`. In this case,
+`a` and `b` are not mutated.
 
 This function implements Prop.
 6 of [[SFVTP19](@ref)].
 """
-function optimal_coupling(
+function optimal_coupling!(
     D::AbstractDivergence,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ = 1e-1;
     C = (x, y) -> norm(x - y),
     dual_potentials_populated::Bool = false,
-    kwargs...
+    kwargs...,
 )
     if !dual_potentials_populated
         unbalanced_sinkhorn!(D, a, b, ϵ; C = C, kwargs...)
     end
-    
+
     f = a.dual_potential
     g = b.dual_potential
     x = a.set
