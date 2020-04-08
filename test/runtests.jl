@@ -53,18 +53,48 @@ end
 
             # ECOS natively supports the exponential cone we need for the KL divergence
             if D isa TV
-                solver = SCSSolver(verbose = 0, eps = 1e-6, max_iters = 20_000)
+                solver = () -> SCS.Optimizer(verbose = 0, eps = 1e-6, max_iters = 20_000)
             else
-                solver = ECOSSolver(verbose = 0)
+                solver = () -> ECOS.Optimizer(verbose = 0, eps=1e-6)
             end
 
             result = OT_convex(D, a, b, ϵ; solver = solver, verbose = true)
 
             @test OT!(D, a, b, ϵ) ≈ result.optimal_value rtol = 1e-3 atol = 1e-3
-            
+
+            coupling_sinkhorn = optimal_coupling!(D, a, b, ϵ)
+            @test result.optimal_coupling ≈ coupling_sinkhorn rtol = 1e-3 atol = 1e-3
+
         end
     end
 
+    @testset "Optimal coupling" begin
+        for ϵ ∈ (0.1, 1.0), D in TEST_DIVERGENCES
+            if D isa Balanced
+                a, b = balanced_measures(4, 3, 1; scale = 100.0)
+            else
+                a = rand_measure(4, 1; scale = 100.0)
+                b = rand_measure(3, 1; scale = 100.0)
+            end
+
+            if D isa RG
+                sc = rand() + 0.5
+                b = DiscreteMeasure(sc * sum(a.density) * b.density / sum(b.density), b.set)
+            end
+
+            aa = deepcopy(a)
+            bb = deepcopy(b)
+            OT_val = OT!(D, aa, bb, ϵ)
+
+            # Try both with `dual_potentials_populated` true and false
+            π2 = optimal_coupling!(D, aa, bb, ϵ; dual_potentials_populated = true)
+            π = optimal_coupling!(D, a, b, ϵ)
+            @test π ≈ π2
+
+            obj = objective(π, D, a, b, ϵ)
+            @test OT_val ≈ obj rtol = 1e-3
+        end
+    end
 
     @testset "Allocations" begin
         a = rand_measure(2, 2; static = true)
@@ -86,7 +116,12 @@ end
             b = rand_measure(80, 2; static = true)
             @test sinkhorn_divergence!(KL(ρ), a, b, ϵ; tol = 1e-6) ≈
                   UnbalancedOptimalTransport._sinkhorn_divergence!(
-                KL(ρ), a, b, ϵ; tol = 1e-6) rtol = 1e-4
+                KL(ρ),
+                a,
+                b,
+                ϵ;
+                tol = 1e-6,
+            ) rtol = 1e-4
         end
     end
 
@@ -147,7 +182,7 @@ end
             sd_a1 = sinkhorn_divergence!(D, a_1, b, ϵ; tol = 1e-5)
             sd_a2 = sinkhorn_divergence!(D, a_2, b, ϵ; tol = 1e-5)
             sd = sinkhorn_divergence!(D, a, b, ϵ; tol = 1e-5)
-            @test all(x -> x>0, (sd_b1, sd_b2, sd_a1, sd_a2, sd)) # positive definite
+            @test all(x -> x > 0, (sd_b1, sd_b2, sd_a1, sd_a2, sd)) # positive definite
             @test λ * sd_a1 + (1 - λ) * sd_a2 >= sd # convexity in a
             @test λ * sd_b1 + (1 - λ) * sd_b2 >= sd # convexity in b
 
