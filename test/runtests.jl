@@ -191,4 +191,24 @@ end
         end
     end
 
+    @testset "eltype" begin
+        for T in (Float32, Float64, BigFloat)
+            a = rand_measure(4, 2; prob_type = T)
+            @test eltype(a) == T
+        end
+    end
+
+    @testset "Warnings and errors" begin
+        a,b = balanced_measures(4, 3, 2)
+        a = DiscreteMeasure(a.density*2, a.set) # unbalance
+        @test_logs (:warn, r"for `D==Balanced\(\)`") unbalanced_sinkhorn!(Balanced(), a, b; tol=10.0)
+
+        a = rand_measure(100, 2; static=true)
+        b = rand_measure(90, 2; static=true)
+        @test_logs (:warn, r"Maximum iterations") unbalanced_sinkhorn!(TV(), a, b, max_iters = 1)
+
+        @test_throws ArgumentError DiscreteMeasure(rand(5), rand(4), rand(5))
+        @test_throws ArgumentError DiscreteMeasure(rand(5), rand(5), rand(4))
+        @test_throws ArgumentError DiscreteMeasure(rand(4), rand(5), rand(5))
+    end
 end

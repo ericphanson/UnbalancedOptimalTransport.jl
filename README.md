@@ -18,6 +18,10 @@ of the quantities computed by this package.
 While the code is generic, it is not currently written to dispatch to BLAS or
 non-scalar GPU operations, although such contributions would be welcomed.
 
+This package was motivated by a desire to compare bitmaps corresponding to
+printed strings in
+[VisualStringDistances.jl](https://github.com/ericphanson/VisualStringDistances.jl).
+
 # Related packages
 
 I found several other Julia implementations of algorithms related to optimal
