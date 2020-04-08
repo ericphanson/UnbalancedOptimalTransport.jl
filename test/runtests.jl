@@ -92,7 +92,7 @@ end
             @test π ≈ π2
 
             obj = objective(π, D, a, b, ϵ)
-            @test OT_val ≈ obj rtol = 1e-4
+            @test OT_val ≈ obj rtol = 1e-3
         end
     end
 
