@@ -53,23 +53,17 @@ end
 
             # ECOS natively supports the exponential cone we need for the KL divergence
             if D isa TV
-                solver = SCSSolver(verbose = 0, eps = 1e-6, max_iters = 20_000)
+                solver = () -> SCS.Optimizer(verbose = 0, eps = 1e-6, max_iters = 20_000)
             else
-                solver = ECOSSolver(verbose = 0)
+                solver = () -> ECOS.Optimizer(verbose = 0)
             end
 
             result = OT_convex(D, a, b, ϵ; solver = solver, verbose = true)
 
             @test OT!(D, a, b, ϵ) ≈ result.optimal_value rtol = 1e-3 atol = 1e-3
 
-            if D == KL(1.0)
-                unbalanced_sinkhorn!(D, a, b, ϵ; tol=1e-8, max_iters=10^6)
-                coupling_sinkhorn = optimal_coupling(a, b, ϵ)
-                @test result.optimal_coupling ≈ coupling_sinkhorn rtol=1e-2 atol=1e-2
-                @show (D, ϵ)
-                @show norm(result.optimal_coupling - coupling_sinkhorn)
-                @show norm(result.optimal_coupling - coupling_sinkhorn)/max(norm(result.optimal_coupling), norm(coupling_sinkhorn))
-            end
+            coupling_sinkhorn = optimal_coupling(D, a, b, ϵ)
+            @test result.optimal_coupling ≈ coupling_sinkhorn rtol=1e-3 atol=1e-3
             
         end
     end
@@ -88,8 +82,15 @@ end
                 b = DiscreteMeasure(sc * sum(a.density) * b.density / sum(b.density), b.set)
             end
 
-            OT_val = OT!(D, a, b, ϵ)
-            π = optimal_coupling(a, b, ϵ)
+            aa = deepcopy(a)
+            bb = deepcopy(b)
+            OT_val = OT!(D, aa, bb, ϵ)
+
+            # Try both with `dual_potentials_populated` true and false
+            π2 = optimal_coupling(D, aa, bb, ϵ; dual_potentials_populated = true)
+            π = optimal_coupling(D, a, b, ϵ)
+            @test π ≈ π2
+
             obj = objective(π, D, a, b, ϵ)
             @test OT_val ≈ obj rtol=1e-4
         end

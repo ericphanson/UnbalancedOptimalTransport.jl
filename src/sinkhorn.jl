@@ -192,31 +192,45 @@ sinkhorn_divergence!(
 
 """
     function optimal_coupling(
+        D::AbstractDivergence,
         a::DiscreteMeasure,
         b::DiscreteMeasure,
-        ϵ=1e-1;
+        ϵ = 1e-1;
         C = (x, y) -> norm(x - y),
-    ) -> Matrix
+        dual_potentials_populated::Bool = false,
+        kwargs...) -> Matrix
 
 Computes the optimal coupling between `a` and `b` using the optimal dual
-potentials, the regularization parameter `ϵ`, and the cost function `C`. One of
-[`unbalanced_sinkhorn!`](@ref) or [`OT!`](@ref) or
-[`sinkhorn_divergence!`](@ref) must be called first to set the optimal dual
-potentials, with the same choice of `ϵ` and `C`. This function implements Prop.
+potentials, the regularization parameter `ϵ`, and the cost function `C`.
+
+If `dual_potentials_populated = false`, [`unbalanced_sinkhorn!`](@ref) is
+called to populate the dual potentials, using the divergence `D`.
+If `dual_potentials_populated = true`, one of [`unbalanced_sinkhorn!`](@ref)
+or [`OT!`](@ref) or [`sinkhorn_divergence!`](@ref) must be called first to
+set the optimal dual potentials, with the same choice of `ϵ` and `C`.
+
+This function implements Prop.
 6 of [[SFVTP19](@ref)].
 """
 function optimal_coupling(
+    D::AbstractDivergence,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ = 1e-1;
     C = (x, y) -> norm(x - y),
+    dual_potentials_populated::Bool = false,
+    kwargs...
 )
+    if !dual_potentials_populated
+        unbalanced_sinkhorn!(D, a, b, ϵ; C = C, kwargs...)
+    end
+    
     f = a.dual_potential
     g = b.dual_potential
     x = a.set
     y = b.set
     return [
-        exp((f[i] + g[j] - C(x[i], y[j])) / ϵ)
+        exp((f[i] + g[j] - C(x[i], y[j])) / ϵ) * a.density[i] * b.density[j]
         for i in eachindex(a.density), j in eachindex(b.density)
     ]
 end
