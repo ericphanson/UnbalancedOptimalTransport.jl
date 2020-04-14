@@ -214,5 +214,6 @@ end
         @test_throws ArgumentError DiscreteMeasure(rand(5), rand(4), rand(5))
         @test_throws ArgumentError DiscreteMeasure(rand(5), rand(5), rand(4))
         @test_throws ArgumentError DiscreteMeasure(rand(4), rand(5), rand(5))
+        @test_throws ArgumentError sinkhorn_divergence!(KL(1), randn(100,90), a, b, ϵ = 1e-1)
     end
 end
