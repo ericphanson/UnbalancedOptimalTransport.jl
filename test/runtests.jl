@@ -99,15 +99,18 @@ end
     @testset "Allocations" begin
         a = rand_measure(2, 2; static = true)
         b = rand_measure(2, 2; static = true)
-        OT!(KL(), a, b) # compile
+        C = precompute_cost(norm, a, b)
+        OT!(KL(), a, b; C = C) # compile
 
         a = rand_measure(100, 2; static = true)
         b = rand_measure(80, 2; static = true)
-        @test_broken @allocated(OT!(KL(), a, b)) <= (VERSION < v"1.3" ? 100 : 32)
+        C = precompute_cost(norm, a, b)
+        @test @allocated(OT!(KL(), a, b; C = C)) <= (VERSION < v"1.3" ? 100 : 64)
 
         a = rand_measure(1000, 2; static = true)
         b = rand_measure(800, 2; static = true)
-        @test_broken @allocated(OT!(KL(), a, b)) <= (VERSION < v"1.3" ? 100 : 32)
+        C = precompute_cost(norm, a, b)
+        @test @allocated(OT!(KL(), a, b; C = C)) <= (VERSION < v"1.3" ? 100 : 64)
     end
 
     @testset "Prop. 12: Optimized KL-Sinkhorn divergence method" begin

@@ -10,7 +10,7 @@ module UnbalancedOptimalTransport
 
 using LinearAlgebra: norm
 
-export DiscreteMeasure, OT!, optimal_coupling!, sinkhorn_divergence!, unbalanced_sinkhorn!
+export DiscreteMeasure, OT!, optimal_coupling!, sinkhorn_divergence!, unbalanced_sinkhorn!, precompute_cost
 
 struct DiscreteMeasure{P,LP,S,T}
     density::P

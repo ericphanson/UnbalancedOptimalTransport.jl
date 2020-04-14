@@ -43,3 +43,10 @@ function handle_C(C,a,b)
     y = b.set
     [C(x, y) for x in x, y in y]
 end
+
+"""
+    precompute_cost(C,a,b) -> Matrix
+
+Precompute the cost matrix given a cost function `C`.
+"""
+precompute_cost(C,a,b) = [C(a-b) for a in a.set, b in b.set]
