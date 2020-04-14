@@ -39,7 +39,7 @@ function DiscreteMeasure(density::P, log_density::LP, set::S) where {P,LP,S}
     n = length(density)
     n == length(log_density) ||
     throw(ArgumentError("`density`, `log_density`, and `set` (if supplied) must have equal length"))
-    set !== nothing && length(set) != n && throw(ArgumentError("`density`, `log_density` and `set` must have equal length"))
+    set !== nothing && length(set) != n && throw(ArgumentError("`density`, `log_density`, and `set` must have equal length"))
     dual_potential = zeros(T, n)
     cache = similar(dual_potential)
     DiscreteMeasure{P,LP,S,T}(density, log_density, set, dual_potential, cache)

@@ -30,7 +30,7 @@ and `b` are updated to hold the optimal dual potentials. The `density`,
   creating or destroying mass
 * `ϵ`: the regularization parameter
 * `C`: either a function from `a.set` × `b.set` to real numbers; should satisfy
-  `C(x,y) = C(y,x)` and `C(x,x)=0` when applicable, or a precomputed cost matrix, see [`compute_costmatrix`](@ref)
+  `C(x,y) = C(y,x)` and `C(x,x)=0` when applicable, or a precomputed cost matrix, see [`cost_matrix`](@ref)
 * `tol`: the convergence tolerance
 * `max_iters`: the maximum number of iterations to perform.
 * `warn`: whether or not to warn when the maximum number of iterations is reached.
@@ -189,6 +189,15 @@ sinkhorn_divergence!(
     kwargs...,
 ) = _sinkhorn_divergence!(D, C, a, b, ϵ; kwargs...)
 
+sinkhorn_divergence!(
+    D::AbstractDivergence,
+    C::AbstractMatrix,
+    a::DiscreteMeasure,
+    b::DiscreteMeasure,
+    ϵ = 1e-1;
+    kwargs...,
+) = throw(ArgumentError("Must pass a cost function `C`, not a cost matrix."))
+
 """
     function optimal_coupling!(
         D::AbstractDivergence,
@@ -257,6 +266,6 @@ for fun in [:unbalanced_sinkhorn!, :OT!, :optimal_coupling!]
             b::DiscreteMeasure,
             args...;
             kwargs...
-        ) = $fun(D,compute_costmatrix(C, a, b), a, b, args...; kwargs...)
+        ) = $fun(D, cost_matrix(C, a, b), a, b, args...; kwargs...)
     end
 end

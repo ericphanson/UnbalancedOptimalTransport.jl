@@ -99,17 +99,17 @@ end
     @testset "Allocations" begin
         a = rand_measure(2, 2; static = true)
         b = rand_measure(2, 2; static = true)
-        C = compute_costmatrix(a, b)
+        C = cost_matrix(a, b)
         OT!(KL(), C, a, b) # compile
 
         a = rand_measure(100, 2; static = true)
         b = rand_measure(80, 2; static = true)
-        C = compute_costmatrix(a, b)
+        C = cost_matrix(a, b)
         @test @allocated(OT!(KL(), C, a, b)) <= 500
 
         a = rand_measure(1000, 2; static = true)
         b = rand_measure(800, 2; static = true)
-        C = compute_costmatrix(a, b)
+        C = cost_matrix(a, b)
         @test @allocated(OT!(KL(), C, a, b)) <= 500
     end
 

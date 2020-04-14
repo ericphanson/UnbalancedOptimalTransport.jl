@@ -33,9 +33,9 @@ function fdot(f, u, v)
 end
 
 """
-    compute_costmatrix([C,] a, b) -> Matrix
+    cost_matrix([C,] a, b) -> Matrix
 
-Precompute the cost matrix given a cost function `C`. The default `C` if none is provided is `C(x,y) = norm(x-y)`.
+Precompute the cost matrix given a cost function `C`. If no function `C` is provided, the default is `C(x,y) = norm(x-y)`.
 """
-compute_costmatrix(C,a,b) = [C(a,b) for a in a.set, b in b.set]
-compute_costmatrix(a,b) = compute_costmatrix((x,y)->norm(x-y), a, b)
+cost_matrix(C,a,b) = [C(a,b) for a in a.set, b in b.set]
+cost_matrix(a,b) = cost_matrix((x,y)->norm(x-y), a, b)
