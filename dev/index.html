@@ -24,7 +24,7 @@ julia&gt; D = UnbalancedOptimalTransport.KL(1.0)
 UnbalancedOptimalTransport.KL{1.0}()
 
 julia&gt; SD = sinkhorn_divergence!(D, cost, a, b, ϵ)
-1.6889829485105783</code></pre><p>The number <code>SD</code> provides us with a distance between the <code>a</code> and <code>b</code> histograms, as computed by the (unbalanced) Sinkhorn divergence. We can also compute the &quot;optimal coupling&quot; which shows us how to move between the histograms.</p><pre><code class="language-julia-repl">julia&gt; π = optimal_coupling!(D, cost, a, b, ϵ)
+1.6889992253532613</code></pre><p>The number <code>SD</code> provides us with a distance between the <code>a</code> and <code>b</code> histograms, as computed by the (unbalanced) Sinkhorn divergence. We can also compute the &quot;optimal coupling&quot; which shows us how to move between the histograms.</p><pre><code class="language-julia-repl">julia&gt; π = optimal_coupling!(D, cost, a, b, ϵ)
 4×3 Array{Float64,2}:
  0.0406497    9.57016e-9  2.37046e-9
  0.218817     5.15162e-8  1.27602e-8
@@ -43,29 +43,29 @@ UnbalancedOptimalTransport.KL{1000.0}()
 julia&gt; sinkhorn_divergence!(D, cost, a, b, ϵ)
 ┌ Warning: Maximum iterations (100000) reached
 │   max_residual = 0.1739244109500504
-└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:100
+└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:101
 ┌ Warning: Maximum iterations (100000) reached
 │   max_residual = 0.18050499785653024
-└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:100
+└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:101
 ┌ Warning: Maximum iterations (100000) reached
 │   max_residual = 0.004481400153572679
-└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:100
-89458.45274821538
+└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:101
+55.53214367513736
 
 julia&gt; π = optimal_coupling!(D, cost, a, b, ϵ)
 ┌ Warning: Maximum iterations (100000) reached
 │   max_residual = 0.004481400153572679
-└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:100
+└ @ UnbalancedOptimalTransport ~/work/UnbalancedOptimalTransport.jl/UnbalancedOptimalTransport.jl/src/sinkhorn.jl:101
 4×3 Array{Float64,2}:
  0.163659     0.187912  0.125149
  0.327646     0.3762    0.250549
  0.327974     0.376576  0.2508
  3.45923e-88  0.287005  0.191146</code></pre><p>We see warnings about the maximum number of iterations being exceeded, so let&#39;s increase that parameter and try again. Note that warnings can be disabled by passing <code>warn=false</code> as a keyword argument.</p><pre><code class="language-julia-repl">julia&gt; sinkhorn_divergence!(D, cost, a, b, ϵ; max_iters = 10^6)
-170.8329513895931
+170.83296992212524
 
 julia&gt; π = optimal_coupling!(D, cost, a, b, ϵ; max_iters = 10^6)
 4×3 Array{Float64,2}:
  0.130872     0.150266  0.100077
  0.262006     0.300833  0.200355
  0.262268     0.301134  0.200555
- 2.76622e-88  0.229507  0.152852</code></pre><p>We see that now we move some mass from each each element of <code>X</code> to each element of <code>Y</code>, to try to avoid needing to create or destroy mass, except no mass is moved from <code>x=4</code> to <code>y=3</code>, presumably because it&#39;s better to move it to <code>y=4</code> and <code>y=5</code> instead.</p></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="optimal_transport/">Optimal transport »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 14 April 2020 11:27">Tuesday 14 April 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ 2.76622e-88  0.229507  0.152852</code></pre><p>We see that now we move some mass from each each element of <code>X</code> to each element of <code>Y</code>, to try to avoid needing to create or destroy mass, except no mass is moved from <code>x=4</code> to <code>y=3</code>, presumably because it&#39;s better to move it to <code>y=4</code> and <code>y=5</code> instead.</p></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="optimal_transport/">Optimal transport »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 14 April 2020 12:24">Tuesday 14 April 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
