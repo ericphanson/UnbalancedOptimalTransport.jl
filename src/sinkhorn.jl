@@ -59,11 +59,11 @@ function unbalanced_sinkhorn!(
     initialize_dual_potential!(D, a)
     initialize_dual_potential!(D, b)
 
-    x = a.set
+    C = handle_C(C,a,b)
+
     f = a.dual_potential
     tmp_f = a.cache
 
-    y = b.set
     g = b.dual_potential
     tmp_g = b.cache
 
@@ -72,9 +72,9 @@ function unbalanced_sinkhorn!(
     while iters < max_iters && max_residual > tol
         iters += 1
         max_residual = 0.0
-        @inbounds for j in eachindex(y)
-            for i in eachindex(a.log_density, f, tmp_f, x)
-                tmp_f[i] = a.log_density[i] + (f[i] - C(x[i], y[j])) / ϵ
+        @inbounds for j in eachindex(g)
+            for i in eachindex(a.log_density, f, tmp_f)
+                tmp_f[i] = a.log_density[i] + (f[i] - C[i, j]) / ϵ
             end
             new_g = -ϵ * logsumexp!(tmp_f)
             new_g = -aprox(D, ϵ, -new_g)
@@ -84,9 +84,9 @@ function unbalanced_sinkhorn!(
             end
             g[j] = new_g
         end
-        @inbounds for j in eachindex(x)
-            for i in eachindex(b.log_density, g, tmp_g, y)
-                tmp_g[i] = b.log_density[i] + (g[i] - C(x[j], y[i])) / ϵ
+        @inbounds for j in eachindex(f)
+            for i in eachindex(b.log_density, g, tmp_g)
+                tmp_g[i] = b.log_density[i] + (g[i] - C[j, i]) / ϵ
             end
             new_f = -ϵ * logsumexp!(tmp_g)
             new_f = -aprox(D, ϵ, -new_f)
@@ -128,12 +128,12 @@ function OT!(
     C = (x, y) -> norm(x - y),
     kwargs...,
 )
+
+    C = handle_C(C,a,b)
     unbalanced_sinkhorn!(D, a, b, ϵ; C = C, kwargs...)
 
     f = a.dual_potential
     g = b.dual_potential
-    x = a.set
-    y = b.set
 
     T = promote_type(eltype(a), eltype(b))
     _nφstar = q -> -φstar(D, -q)
@@ -141,12 +141,12 @@ function OT!(
     t1 = fdot(_nφstar, a.density, f)
     t2 = fdot(_nφstar, b.density, g)
     t3 = zero(T)
-    for i in eachindex(x), j in eachindex(y)
+    for i in eachindex(f), j in eachindex(g)
         t3 -=
             ϵ *
             a.density[i] *
             b.density[j] *
-            (exp((f[i] + g[j] - C(x[i], y[j])) / ϵ) - one(T))
+            (exp((f[i] + g[j] - C[i, j]) / ϵ) - one(T))
     end
     return t1 + t2 + t3
 end
@@ -220,16 +220,15 @@ function optimal_coupling!(
     dual_potentials_populated::Bool = false,
     kwargs...,
 )
+    C = handle_C(C,a,b)
     if !dual_potentials_populated
         unbalanced_sinkhorn!(D, a, b, ϵ; C = C, kwargs...)
     end
 
     f = a.dual_potential
     g = b.dual_potential
-    x = a.set
-    y = b.set
     return [
-        exp((f[i] + g[j] - C(x[i], y[j])) / ϵ) * a.density[i] * b.density[j]
+        exp((f[i] + g[j] - C[i, j]) / ϵ) * a.density[i] * b.density[j]
         for i in eachindex(a.density), j in eachindex(b.density)
     ]
 end
