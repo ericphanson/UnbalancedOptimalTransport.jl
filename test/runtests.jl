@@ -99,15 +99,18 @@ end
     @testset "Allocations" begin
         a = rand_measure(2, 2; static = true)
         b = rand_measure(2, 2; static = true)
-        OT!(KL(), a, b) # compile
+        C = cost_matrix(a, b)
+        OT!(KL(), C, a, b) # compile
 
         a = rand_measure(100, 2; static = true)
         b = rand_measure(80, 2; static = true)
-        @test @allocated(OT!(KL(), a, b)) <= (VERSION < v"1.3" ? 100 : 32)
+        C = cost_matrix(a, b)
+        @test @allocated(OT!(KL(), C, a, b)) <= 500
 
         a = rand_measure(1000, 2; static = true)
         b = rand_measure(800, 2; static = true)
-        @test @allocated(OT!(KL(), a, b)) <= (VERSION < v"1.3" ? 100 : 32)
+        C = cost_matrix(a, b)
+        @test @allocated(OT!(KL(), C, a, b)) <= 500
     end
 
     @testset "Prop. 12: Optimized KL-Sinkhorn divergence method" begin
@@ -117,6 +120,7 @@ end
             @test sinkhorn_divergence!(KL(ρ), a, b, ϵ; tol = 1e-6) ≈
                   UnbalancedOptimalTransport._sinkhorn_divergence!(
                 KL(ρ),
+                (x,y)->norm(x-y),
                 a,
                 b,
                 ϵ;
@@ -210,5 +214,6 @@ end
         @test_throws ArgumentError DiscreteMeasure(rand(5), rand(4), rand(5))
         @test_throws ArgumentError DiscreteMeasure(rand(5), rand(5), rand(4))
         @test_throws ArgumentError DiscreteMeasure(rand(4), rand(5), rand(5))
+        @test_throws ArgumentError sinkhorn_divergence!(KL(1), randn(100,90), a, b, ϵ = 1e-1)
     end
 end

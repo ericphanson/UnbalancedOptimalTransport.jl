@@ -10,7 +10,7 @@ module UnbalancedOptimalTransport
 
 using LinearAlgebra: norm
 
-export DiscreteMeasure, OT!, optimal_coupling!, sinkhorn_divergence!, unbalanced_sinkhorn!
+export DiscreteMeasure, OT!, optimal_coupling!, sinkhorn_divergence!, unbalanced_sinkhorn!, cost_matrix
 
 struct DiscreteMeasure{P,LP,S,T}
     density::P
@@ -37,14 +37,15 @@ from `set`
 function DiscreteMeasure(density::P, log_density::LP, set::S) where {P,LP,S}
     T = eltype(density)
     n = length(density)
-    n == length(log_density) == length(set) ||
-    throw(ArgumentError("`density`, `log_density` and `set` must have equal length"))
+    n == length(log_density) ||
+    throw(ArgumentError("`density`, `log_density`, and `set` (if supplied) must have equal length"))
+    set !== nothing && length(set) != n && throw(ArgumentError("`density`, `log_density`, and `set` must have equal length"))
     dual_potential = zeros(T, n)
     cache = similar(dual_potential)
     DiscreteMeasure{P,LP,S,T}(density, log_density, set, dual_potential, cache)
 end
 
-DiscreteMeasure(density, set) = DiscreteMeasure(density, log.(density), set)
+DiscreteMeasure(density, set=nothing) = DiscreteMeasure(density, log.(density), set)
 
 Base.eltype(::DiscreteMeasure{P,LP,S,T}) where {P,LP,S,T} = T
 Base.length(a::DiscreteMeasure) = length(a.density)
