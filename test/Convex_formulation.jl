@@ -36,7 +36,7 @@ function objective(
     π_2 = vec(sum(π, dims = 1))
 
     # instantiate the cost matrix
-    C_matrix = [C(xᵢ, yⱼ) for xᵢ in a.set, yⱼ in b.set]
+    C_matrix = cost_matrix(C, a, b)
 
     obj = dot(C_matrix, π) + ϵ * divergence(KL(), vec(π), kron(b.density, a.density))
 

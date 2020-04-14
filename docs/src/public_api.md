@@ -74,3 +74,11 @@ specialized to improve performance.
 ```@docs
 UnbalancedOptimalTransport.fdot
 ```
+
+The following function `cost_matrix` is used in [`unbalanced_sinkhorn!`](@ref),
+[`OT!`](@ref), and [`optimal_coupling`](@ref) to precompute the costs given a
+cost function.
+
+```@docs
+UnbalancedOptimalTransport.cost_matrix
+```

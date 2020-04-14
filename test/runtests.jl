@@ -55,7 +55,7 @@ end
             if D isa TV
                 solver = () -> SCS.Optimizer(verbose = 0, eps = 1e-6, max_iters = 20_000)
             else
-                solver = () -> ECOS.Optimizer(verbose = 0, eps=1e-6)
+                solver = () -> ECOS.Optimizer(verbose = 0, eps = 1e-6)
             end
 
             result = OT_convex(D, a, b, ϵ; solver = solver, verbose = true)
@@ -114,13 +114,27 @@ end
     end
 
     @testset "Prop. 12: Optimized KL-Sinkhorn divergence method" begin
-        for ρ ∈ (0.5, 2.0), ϵ ∈ (0.1, 1.0, 10.0)
+        for ρ ∈ (0.5, 2.0),
+            ϵ ∈ (0.1, 1.0, 10.0),
+            C ∈ ((x, y) -> norm(x - y, 3.0), (x, y) -> norm(x - y))
+
             a = rand_measure(100, 2; static = true)
             b = rand_measure(80, 2; static = true)
-            @test sinkhorn_divergence!(KL(ρ), a, b, ϵ; tol = 1e-6) ≈
-                  UnbalancedOptimalTransport._sinkhorn_divergence!(
+            @test sinkhorn_divergence!(KL(ρ), C, a, b, ϵ; tol = 1e-6) ≈
+                  UnbalancedOptimalTransport.generic_sinkhorn_divergence!(
                 KL(ρ),
-                (x,y)->norm(x-y),
+                C,
+                a,
+                b,
+                ϵ;
+                tol = 1e-6,
+            ) rtol = 1e-4
+
+            # Test default argument for `C`
+            @test sinkhorn_divergence!(KL(ρ), a, b, ϵ; tol = 1e-6) ≈
+                  UnbalancedOptimalTransport.generic_sinkhorn_divergence!(
+                KL(ρ),
+                (x, y) -> norm(x - y),
                 a,
                 b,
                 ϵ;
@@ -203,17 +217,33 @@ end
     end
 
     @testset "Warnings and errors" begin
-        a,b = balanced_measures(4, 3, 2)
-        a = DiscreteMeasure(a.density*2, a.set) # unbalance
-        @test_logs (:warn, r"for `D==Balanced\(\)`") unbalanced_sinkhorn!(Balanced(), a, b; tol=10.0)
+        a, b = balanced_measures(4, 3, 2)
+        a = DiscreteMeasure(a.density * 2, a.set) # unbalanced
+        @test_logs (:warn, r"for `D==Balanced\(\)`") unbalanced_sinkhorn!(
+            Balanced(),
+            a,
+            b;
+            tol = 10.0,
+        )
 
-        a = rand_measure(100, 2; static=true)
-        b = rand_measure(90, 2; static=true)
-        @test_logs (:warn, r"Maximum iterations") unbalanced_sinkhorn!(TV(), a, b, max_iters = 1)
+        a = rand_measure(100, 2; static = true)
+        b = rand_measure(90, 2; static = true)
+        @test_logs (:warn, r"Maximum iterations") unbalanced_sinkhorn!(
+            TV(),
+            a,
+            b,
+            max_iters = 1,
+        )
 
         @test_throws ArgumentError DiscreteMeasure(rand(5), rand(4), rand(5))
         @test_throws ArgumentError DiscreteMeasure(rand(5), rand(5), rand(4))
         @test_throws ArgumentError DiscreteMeasure(rand(4), rand(5), rand(5))
-        @test_throws ArgumentError sinkhorn_divergence!(KL(1), randn(100,90), a, b, ϵ = 1e-1)
+        @test_throws ArgumentError sinkhorn_divergence!(
+            KL(1),
+            randn(100, 90),
+            a,
+            b,
+            ϵ = 1e-1,
+        )
     end
 end
