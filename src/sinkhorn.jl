@@ -13,10 +13,10 @@ end
 """
     function unbalanced_sinkhorn!(
         D::AbstractDivergence,
+        C,
         a::DiscreteMeasure,
         b::DiscreteMeasure,
         ϵ = 1e-1;
-        C = (x, y) -> norm(x - y),
         tol = 1e-5,
         max_iters = 10^5,
         warn::Bool = true,
@@ -29,8 +29,8 @@ and `b` are updated to hold the optimal dual potentials. The `density`,
 * `D`: the [`AbstractDivergence`](@ref) used for measuring the cost of
   creating or destroying mass
 * `ϵ`: the regularization parameter
-* `C`: a function from `a.set` × `b.set` to real numbers; should satisfy
-  `C(x,y) = C(y,x)` and `C(x,x)=0` when applicable
+* `C`: either a function from `a.set` × `b.set` to real numbers; should satisfy
+  `C(x,y) = C(y,x)` and `C(x,x)=0` when applicable, or a precomputed cost matrix, see [`compute_costmatrix`](@ref)
 * `tol`: the convergence tolerance
 * `max_iters`: the maximum number of iterations to perform.
 * `warn`: whether or not to warn when the maximum number of iterations is reached.
@@ -44,10 +44,10 @@ below `tol`.
 """
 function unbalanced_sinkhorn!(
     D::AbstractDivergence,
+    C::AbstractMatrix,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ = 1e-1;
-    C = (x, y) -> norm(x - y),
     tol = 1e-5,
     max_iters = 10^5,
     warn::Bool = true,
@@ -58,8 +58,6 @@ function unbalanced_sinkhorn!(
 
     initialize_dual_potential!(D, a)
     initialize_dual_potential!(D, b)
-
-    C = handle_C(C,a,b)
 
     f = a.dual_potential
     tmp_f = a.cache
@@ -108,6 +106,7 @@ end
 """
     function OT!(
         D::AbstractDivergence,
+        C,
         a::DiscreteMeasure,
         b::DiscreteMeasure,
         ϵ = 1e-1;
@@ -122,15 +121,14 @@ parameters and the keyword arguments. Implements Equation (15) of
 """
 function OT!(
     D::AbstractDivergence,
+    C::AbstractMatrix,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ = 1e-1;
-    C = (x, y) -> norm(x - y),
     kwargs...,
 )
 
-    C = handle_C(C,a,b)
-    unbalanced_sinkhorn!(D, a, b, ϵ; C = C, kwargs...)
+    unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
 
     f = a.dual_potential
     g = b.dual_potential
@@ -154,14 +152,15 @@ end
 # Generic method
 function _sinkhorn_divergence!(
     D::AbstractDivergence,
+    C,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ;
     kwargs...,
 )
-    OT_aa = OT!(D, a, a, ϵ; kwargs...)
-    OT_bb = OT!(D, b, b, ϵ; kwargs...)
-    OT_ab = OT!(D, a, b, ϵ; kwargs...)
+    OT_aa = OT!(D, C, a, a, ϵ; kwargs...)
+    OT_bb = OT!(D, C, b, b, ϵ; kwargs...)
+    OT_ab = OT!(D, C, a, b, ϵ; kwargs...)
 
     OT_ab + (-OT_aa - OT_bb + ϵ * (sum(a.density) - sum(b.density))^2) / 2
 end
@@ -169,6 +168,7 @@ end
 """
     sinkhorn_divergence!(
         D::AbstractDivergence,
+        C,
         a::DiscreteMeasure,
         b::DiscreteMeasure,
         ϵ = 1e-1;
@@ -182,19 +182,20 @@ optimal `dual_potential`'s of `a` and `b`.
 """
 sinkhorn_divergence!(
     D::AbstractDivergence,
+    C,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ = 1e-1;
     kwargs...,
-) = _sinkhorn_divergence!(D, a, b, ϵ; kwargs...)
+) = _sinkhorn_divergence!(D, C, a, b, ϵ; kwargs...)
 
 """
     function optimal_coupling!(
         D::AbstractDivergence,
+        C,
         a::DiscreteMeasure,
         b::DiscreteMeasure,
         ϵ = 1e-1;
-        C = (x, y) -> norm(x - y),
         dual_potentials_populated::Bool = false,
         kwargs...) -> Matrix
 
@@ -213,16 +214,15 @@ This function implements Prop.
 """
 function optimal_coupling!(
     D::AbstractDivergence,
+    C::AbstractMatrix,
     a::DiscreteMeasure,
     b::DiscreteMeasure,
     ϵ = 1e-1;
-    C = (x, y) -> norm(x - y),
     dual_potentials_populated::Bool = false,
     kwargs...,
 )
-    C = handle_C(C,a,b)
     if !dual_potentials_populated
-        unbalanced_sinkhorn!(D, a, b, ϵ; C = C, kwargs...)
+        unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
     end
 
     f = a.dual_potential
@@ -231,4 +231,32 @@ function optimal_coupling!(
         exp((f[i] + g[j] - C[i, j]) / ϵ) * a.density[i] * b.density[j]
         for i in eachindex(a.density), j in eachindex(b.density)
     ]
+end
+
+
+# Provide default choice of norm as cost function
+for fun in [:unbalanced_sinkhorn!, :OT!, :sinkhorn_divergence!, :optimal_coupling!]
+    @eval begin
+        $fun(
+            D::AbstractDivergence,
+            a::DiscreteMeasure,
+            b::DiscreteMeasure,
+            args...;
+            kwargs...
+        ) = $fun(D, (x,y)->norm(x-y), a, b, args...; kwargs...)
+    end
+end
+
+# If a function is provided, precompute the cost matrix. sinkhorn_divergence is omitted since it requires three different cost matrices.
+for fun in [:unbalanced_sinkhorn!, :OT!, :optimal_coupling!]
+    @eval begin
+        $fun(
+            D::AbstractDivergence,
+            C, # Not restricting to Function to allow callable structs etc.
+            a::DiscreteMeasure,
+            b::DiscreteMeasure,
+            args...;
+            kwargs...
+        ) = $fun(D,compute_costmatrix(C, a, b), a, b, args...; kwargs...)
+    end
 end

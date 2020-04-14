@@ -32,21 +32,10 @@ function fdot(f, u, v)
     s
 end
 
-function handle_C(C::AbstractMatrix,a,b)
-    size(C) == (length(a), length(b)) ||
-        throw(ArgumentError("The dimension of the cost matrix C does not match the length of the measures. Got $(size(C)), $((length(a), length(b)))"))
-    C
-end
-
-function handle_C(C,a,b)
-    x = a.set
-    y = b.set
-    [C(x, y) for x in x, y in y]
-end
-
 """
-    precompute_cost(C,a,b) -> Matrix
+    compute_costmatrix([C,] a, b) -> Matrix
 
-Precompute the cost matrix given a cost function `C`.
+Precompute the cost matrix given a cost function `C`. The default `C` if none is provided is `C(x,y) = norm(x-y)`.
 """
-precompute_cost(C,a,b) = [C(a-b) for a in a.set, b in b.set]
+compute_costmatrix(C,a,b) = [C(a,b) for a in a.set, b in b.set]
+compute_costmatrix(a,b) = compute_costmatrix((x,y)->norm(x-y), a, b)

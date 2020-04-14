@@ -43,7 +43,7 @@ b = DiscreteMeasure(b_weights, Y);
 cost = (x, y) -> abs(x - y)
 ϵ = 0.01 # small regularization
 D = UnbalancedOptimalTransport.KL(1.0)
-SD = sinkhorn_divergence!(D, a, b, ϵ; C = cost)
+SD = sinkhorn_divergence!(D, cost, a, b, ϵ)
 ```
 
 The number `SD` provides us with a distance between the `a` and `b` histograms,
@@ -51,7 +51,7 @@ as computed by the (unbalanced) Sinkhorn divergence. We can also compute the
 "optimal coupling" which shows us how to move between the histograms.
 
 ```@repl 1
-π = optimal_coupling!(D, a, b, ϵ; C = cost)
+π = optimal_coupling!(D, cost, a, b, ϵ)
 ```
 
 Here, `π[x,y]` represents how much mass we should move from `x` to `y`. Since
@@ -62,7 +62,7 @@ optimal coupling changes.
 
 ```@repl 1
 D = UnbalancedOptimalTransport.KL(0.01)
-π = optimal_coupling!(D, a, b, ϵ; C = cost)
+π = optimal_coupling!(D, cost, a, b, ϵ)
 ```
 
 We can see that the only non-tiny entries of `π` are the `(3,1)` and `(4,2)`,
@@ -73,8 +73,8 @@ there is a high penalty for mass creation and destruction:
 
 ```@repl 1
 D = UnbalancedOptimalTransport.KL(1000.0)
-sinkhorn_divergence!(D, a, b, ϵ; C = cost)
-π = optimal_coupling!(D, a, b, ϵ; C = cost)
+sinkhorn_divergence!(D, cost, a, b, ϵ)
+π = optimal_coupling!(D, cost, a, b, ϵ)
 ```
 
 We see warnings about the maximum number of
@@ -82,8 +82,8 @@ iterations being exceeded, so let's increase that parameter and try again. Note
 that warnings can be disabled by passing `warn=false` as a keyword argument.
 
 ```@repl 1
-sinkhorn_divergence!(D, a, b, ϵ; C = cost, max_iters = 10^6)
-π = optimal_coupling!(D, a, b, ϵ; C = cost, max_iters = 10^6)
+sinkhorn_divergence!(D, cost, a, b, ϵ; max_iters = 10^6)
+π = optimal_coupling!(D, cost, a, b, ϵ; max_iters = 10^6)
 ```
 
 We see that now we move some mass from each each element of `X` to each element
