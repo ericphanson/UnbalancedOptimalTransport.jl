@@ -35,3 +35,4 @@ creation of this package.
 * <https://github.com/niladridas/OT_Julia> (balanced only, I think)
 * <https://www.numerical-tours.com/julia/> (tutorials)
 * <https://github.com/lchizat/optimal-transport> (not maintained)
+* <https://github.com/baggepinnen/SpectralDistances.jl> (uses this package for the unbalanced case!)
