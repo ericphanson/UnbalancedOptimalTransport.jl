@@ -7,6 +7,13 @@ function logsumexp!(w)
     Σ = _sum_all_but(w, maxind)
     log1p(Σ) + offset
 end
+using KernelAbstractions
+
+@kernel function logsumexp_ker!(w)
+    
+
+end
+
 
 # Add all elements of vector `w` except for index `i`.
 # The element at index `i` is assumed to have value 1

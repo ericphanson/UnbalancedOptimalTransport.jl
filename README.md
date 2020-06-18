@@ -29,6 +29,7 @@ transport, which may be of interest to the reader. As far as I could find,
 however, none are pure-Julia and treat the unbalanced case, which prompted the
 creation of this package.
 
+* <https://github.com/zsteve/OptimalTransport.jl> (GPL-licensed)
 * <https://github.com/mirkobunse/EarthMoversDistance.jl> (wrapper of C library)
 * <https://github.com/mark-fangzhou-xie/JOT-Julia-Optimal-Transport> (balanced
   only, I think)

@@ -83,6 +83,7 @@ function unbalanced_sinkhorn!(
     return (iters = iters, max_residual = max_residual)
 end
 
+
 function update_dual_potential!(g, log_density, f, tmp_f, ϵ, C, D, max_residual)
     @inbounds for j in eachindex(g)
         for i in eachindex(log_density, f, tmp_f)

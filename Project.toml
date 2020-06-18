@@ -4,6 +4,7 @@ authors = ["Eric P. Hanson"]
 version = "0.2.0"
 
 [deps]
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [compat]
