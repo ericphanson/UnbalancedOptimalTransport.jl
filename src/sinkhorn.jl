@@ -68,12 +68,33 @@ function unbalanced_sinkhorn!(
 
     max_residual = Inf
     iters = 0
+    tmp_C = copy(C)
     Ct = transpose(C)
+    tmp_Ct = transpose(tmp_C)
+
+    gt = transpose(g)
+    ft = transpose(f)
+    old_g = deepcopy(g)
+    old_f = deepcopy(f)
+    old_ft = transpose(old_f)
+    old_gt = transpose(old_g)
+
     while iters < max_iters && max_residual > tol
         iters += 1
-        max_residual = 0.0
-        max_residual = update_dual_potential!(g, a.log_density, f, tmp_f, ϵ, C, D, max_residual)
-        max_residual = update_dual_potential!(f, b.log_density, g, tmp_g, ϵ, Ct, D, max_residual)
+        old_ft, ft = ft, old_ft
+        old_f, f = f, old_f
+        old_g, g = g, old_g
+        old_gt, gt = gt, old_gt
+        update_dual_potential!(gt, a.log_density, old_f, tmp_f, ϵ, C, D, tmp_C)
+        update_dual_potential!(ft, b.log_density, g, tmp_g, ϵ, Ct, D, tmp_Ct)
+        max_residual = max(norm(f-old_f, Inf), norm(g-old_g, Inf))
+    end
+
+    # We've swapped around `f` and `old_f` (and likewise `g`);
+    # let's end with the right one.
+    if f !== a.dual_potential
+        a.dual_potential .= f
+        b.dual_potential .= g
     end
 
     if warn && iters == max_iters
@@ -84,14 +105,11 @@ function unbalanced_sinkhorn!(
 end
 
 
-function update_dual_potential!(g, log_density, f, tmp_f, ϵ, C, D, max_residual)
-    C̃ = log_density .+ (f .- C) ./ ϵ
-    m = maximum(C̃, dims=1)
-    g_old = copy(g)
-    gt = transpose(g)
-    gt .= -aprox.(tuple(D), tuple(ϵ), ϵ .* ( m .+ log.(sum(exp.(C̃ .- m), dims=1)) ) )
-    max_residual = maximum(abs, g - g_old)
-    return max_residual
+function update_dual_potential!(gt, log_density, f, tmp_f, ϵ, C, D, tmp_C)
+    tmp_C .= log_density .+ (f .- C) ./ ϵ
+    m = maximum(tmp_C, dims=1)
+    # gt = transpose(g)
+    gt .= -aprox.(tuple(D), tuple(ϵ), ϵ .* ( m .+ log.(sum(exp.(tmp_C .- m), dims=1)) ) )
 end
 
 """
