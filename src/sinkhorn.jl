@@ -85,18 +85,12 @@ end
 
 
 function update_dual_potential!(g, log_density, f, tmp_f, ϵ, C, D, max_residual)
-    @inbounds for j in eachindex(g)
-        for i in eachindex(log_density, f, tmp_f)
-            tmp_f[i] = log_density[i] + (f[i] - C[i, j]) / ϵ
-        end
-        new_g = -ϵ * logsumexp!(tmp_f)
-        new_g = -aprox(D, ϵ, -new_g)
-        diff = abs(g[j] - new_g)
-        if diff > max_residual
-            max_residual = diff
-        end
-        g[j] = new_g
-    end
+    C̃ = log_density .+ (f .- C) ./ ϵ
+    m = maximum(C̃, dims=1)
+    g_old = copy(g)
+    gt = transpose(g)
+    gt .= -aprox.(tuple(D), tuple(ϵ), ϵ .* ( m .+ log.(sum(exp.(C̃ .- m), dims=1)) ) )
+    max_residual = maximum(abs, g - g_old)
     return max_residual
 end
 
