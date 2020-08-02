@@ -36,3 +36,5 @@ creation of this package.
 * <https://www.numerical-tours.com/julia/> (tutorials)
 * <https://github.com/lchizat/optimal-transport> (not maintained)
 * <https://github.com/baggepinnen/SpectralDistances.jl> (uses this package for the unbalanced case!)
+* <https://github.com/zsteve/OptimalTransport.jl> (lots of methods available including the unbalanced case, some called from the POT python library; GPL v3 licensed)
+* <https://github.com/devmotion/OptimalTransport.jl> (balanced only; exact algorithm via the network simplex method)
