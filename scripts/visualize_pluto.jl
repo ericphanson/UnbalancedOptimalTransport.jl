@@ -190,7 +190,7 @@ end
 ab_conv = convex_combination(a - x_ext + μ_ext,  b - y_ext + ν_ext)
 
 # ╔═╡ 1471492c-29bc-11eb-3c15-bb1793756268
-list = [(a, "a"), (ab_conv(0), "Create/destroy mass"), (ab_conv(0.25), "Transport 25%"), (ab_conv(0.5), "Transport 50%"), (ab_conv(0.75), "Transport 75%"),  (ab_conv(1), "Transport 100%"), (b, "Create/destroy mass")]
+list = [(a, "a"), (ab_conv(0), "Create/destroy mass"), (ab_conv(0.25), "Transport 25%"), (ab_conv(0.5), "Transport 50%"), (ab_conv(0.75), "Transport 75%"),  (ab_conv(1), "Transport 100%"), (b, "Create/destroy mass"), (b, "b")]
 
 # ╔═╡ d63617ec-29ba-11eb-3fed-812bc2a2782b
 ex = let
@@ -208,12 +208,43 @@ plus = '₊'
 minus = '₋'
 
 # ╔═╡ 5c672632-29c0-11eb-1d7b-dd324cb662a4
-list2 = [(x_ext, "a$plus + b$minus"), (μν_conv(0), "Create/destroy mass"), (μν_conv(0.25), "Transport 25%"), (μν_conv(0.5), "Transport 50%"), (μν_conv(0.75), "Transport 75%"),  (μν_conv(1), "Transport 100%"), (y_ext, "Create/destroy mass")]
+list2 = [(x_ext, "a$plus + b$minus"), (μν_conv(0), "Create/destroy mass"), (μν_conv(0.25), "Transport 25%"), (μν_conv(0.5), "Transport 50%"), (μν_conv(0.75), "Transport 75%"),  (μν_conv(1), "Transport 100%"), (y_ext, "Create/destroy mass"), (y_ext, "b$plus + a$minus")]
 
 # ╔═╡ 2a5875bc-29c1-11eb-20d0-47f8c5e3a5da
 ex2 = let
 	exs = extrema.(first.(list2))
 	minimum(first.(exs)) - .2, maximum(last.(exs)) + 1
+end
+
+# ╔═╡ 4e690274-2b23-11eb-2907-5546c62231d3
+begin
+	maybe_lift(f, x::Observable) = lift(f, x)
+	maybe_lift(f, x) = f(x)
+end
+
+# ╔═╡ b5ef9b9a-2b20-11eb-2c94-5db769d419ad
+function barplot_with_title!(scene, data, title; kwargs...)
+	layout = GridLayout()
+	layout[1, 1] = t = LText(scene, title, textsize = 30, font = FONT, color = (:black, 0.25))
+	t.tellwidth = false
+
+	layout[2, 1] = ax = LAxis(scene)
+	AbstractPlotting.barplot!(ax, maybe_lift(x -> 1:length(x), data), data; kwargs...)
+	return (layout, ax)
+end
+
+
+# ╔═╡ ddc87348-2b21-11eb-1079-0f662e8190f5
+function barplot_pos_neg!(scene, v, name; kwargs...)
+	layout = GridLayout()
+	ylims = (minimum(v)-1, maximum(v)+1)
+	
+	l1, ax1 = barplot_with_title!(scene, v, name; ylims, kwargs...)
+	l2, ax2 = barplot_with_title!(scene, max.(v, 0), "$name$minus"; ylims, kwargs...)
+	l3, ax3 = barplot_with_title!(scene, -min.(v, 0), "$name$plus"; ylims, kwargs...)
+	linkyaxes!(ax1, ax2, ax3)
+	layout[1, 1:3] = [l1, l2, l3]
+	return layout
 end
 
 # ╔═╡ 64d9a390-29ba-11eb-211d-8ff252146626
@@ -225,152 +256,34 @@ t
 # ╔═╡ e552abf4-29c5-11eb-2c7e-33ba6bd2a502
 ts = 1:max(length(list), length(list2))
 
-# ╔═╡ 9cb9ac38-29d8-11eb-3d8f-c52413f91d36
-
-
 # ╔═╡ 35e9872a-29b9-11eb-18c6-fd932571d10b
 colors = AbstractPlotting.current_default_theme()[:palette].color[]
 
 # ╔═╡ 9627c1f0-29d3-11eb-2871-1ba3530f91f4
-scene5 = let
-	s, layout = layoutscene()
-	
-	l1 = (minimum(a)-1, maximum(a)+1)
-	
-	title1 = layout[1, 1] = LText(s, "a",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title1.tellwidth = false
-	
-	title2 = layout[1, 2] = LText(s, "a$minus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title2.tellwidth = false
-	
-	title3 = layout[1, 3] = LText(s, "a$plus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title3.tellwidth = false
-	
-	layout[2,1] = ax1 = LAxis(s)
-	AbstractPlotting.barplot!(ax1, 1:d, a, color = colors[1], ylims=l1)
-
-	layout[2,2] = ax2 = LAxis(s)
-	AbstractPlotting.barplot!(ax2, 1:d, max.(a, 0), color = colors[1], ylims=l1)
-
-	layout[2,3] = ax3 = LAxis(s)
-	AbstractPlotting.barplot!(ax3, 1:d, -min.(a, 0), color = colors[1], ylims=l1)
-
-	linkyaxes!(ax1, ax2, ax3)
-
-	l2 = (minimum(b)-1, maximum(b)+1)
-
-	title1 = layout[3, 1] = LText(s, "b",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title1.tellwidth = false
-	
-	title2 = layout[3, 2] = LText(s, "b$plus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title2.tellwidth = false
-	
-	title3 = layout[3, 3] = LText(s, "b$minus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title3.tellwidth = false
-	
-	layout[4,1] = ax4 = LAxis(s)
-	AbstractPlotting.barplot!(ax4, 1:d, b, color = colors[1], ylims=l2)
-
-	layout[4,2] = ax5 = LAxis(s)
-	AbstractPlotting.barplot!(ax5, 1:d, max.(b, 0), color = colors[1], ylims=l2)
-
-	layout[4,3] = ax6 = LAxis(s)
-	AbstractPlotting.barplot!(ax6, 1:d, -min.(b, 0), color = colors[1], ylims=l2)
-
-
-	linkyaxes!(ax4, ax5, ax6)
-	s
+initial_final_scene = let
+	scene, layout = layoutscene()
+	layout[1,1] = barplot_pos_neg!(scene, a, "a"; color = colors[1])
+	layout[2,1] = barplot_pos_neg!(scene, b, "b"; color = colors[1])
+	scene
 end
 
-# ╔═╡ f5751dfc-29be-11eb-2a35-79fd0c2858c6
-scene2 = let
-	s, layout = layoutscene()
+# ╔═╡ 8d29425c-2b22-11eb-1c7a-07a74ee372c3
+joint_scene = let
+	kwargs = (; color = colors[1])
+	scene, layout = layoutscene()
 
-	title1 = layout[1, 1] = LText(s, "a",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title1.tellwidth = false
+	l11, ax11 = barplot_with_title!(scene, list2[1][1],  list2[1][2]; kwargs...)
+	l12, ax12 = barplot_with_title!(scene, bar_vals2, title_text2; kwargs...)
+	l13, ax13 = barplot_with_title!(scene, list2[end][1], list2[end][2]; kwargs...)
+	linkyaxes!(ax11, ax12, ax13)
+	layout[1, 1:3] = [l11, l12, l13]
 	
-	title2 = layout[1, 3] = LText(s, "b",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title2.tellwidth = false
-	
-	layout[2,1] = ax1 = LAxis(s)
-	AbstractPlotting.barplot!(ax1, 1:d, list[1][1], color = colors[1], ylims=ex)
-
-	layout[2,3] = ax2 = LAxis(s)
-	AbstractPlotting.barplot!(ax2, 1:d, list[end][1], color = colors[1], ylims=ex)
-
-	title_mid = layout[1,2] = LText(s, title_text,
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title_mid.tellwidth=false
-	
-	layout[2,2] = ax = LAxis(s)
-	AbstractPlotting.barplot!(ax, 1:d, bar_vals, color = colors[1], ylims=ex)
-
-	linkyaxes!(ax1, ax2, ax)
-	
-	s;
-end
-
-# ╔═╡ e084a776-29c0-11eb-0376-85c7b4622737
-scene4 = let
-	s, layout = layoutscene()
-
-	title1 = layout[1, 1] = LText(s, "a$plus + b$minus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title1.tellwidth = false
-	
-	title2 = layout[1, 3] = LText(s, "b$plus + a$minus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title2.tellwidth = false
-	
-	layout[2,1] = ax1 = LAxis(s)
-	AbstractPlotting.barplot!(ax1, 1:d, list2[1][1], color = colors[1], ylims=ex2)
-
-	layout[2,3] = ax2 = LAxis(s)
-	AbstractPlotting.barplot!(ax2, 1:d, list2[end][1], color = colors[1], ylims=ex2)
-
-	title_mid = layout[1,2] = LText(s, title_text2,
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title_mid.tellwidth=false
-	
-	layout[2,2] = ax3 = LAxis(s)
-	AbstractPlotting.barplot!(ax3, 1:d, bar_vals2, color = colors[1], ylims=ex2)
-
-	linkyaxes!(ax1, ax2, ax3)
-	
-	
-	title1 = layout[3, 1] = LText(s, "a",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title1.tellwidth = false
-	
-	title2 = layout[3, 3] = LText(s, "b",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title2.tellwidth = false
-	
-	layout[4,1] = ax4 = LAxis(s)
-	AbstractPlotting.barplot!(ax4, 1:d, list[1][1], color = colors[1], ylims=ex)
-
-	layout[4,3] = ax5 = LAxis(s)
-	AbstractPlotting.barplot!(ax5, 1:d, list[end][1], color = colors[1], ylims=ex)
-
-	title_mid = layout[3,2] = LText(s, title_text,
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title_mid.tellwidth=false
-	
-	layout[4,2] = ax6 = LAxis(s)
-	AbstractPlotting.barplot!(ax6, 1:d, bar_vals, color = colors[1], ylims=ex)
-
-	linkyaxes!(ax4, ax5, ax6)
-	
-	
-	s;
+	l21, ax21 = barplot_with_title!(scene, list[1][1],  list[1][2]; kwargs...)
+	l22, ax22 = barplot_with_title!(scene, bar_vals, title_text; kwargs...)
+	l23, ax23 = barplot_with_title!(scene, list[end][1], list[end][2]; kwargs...)
+	linkyaxes!(ax21, ax22, ax23)
+	layout[2, 1:3] = [l21, l22, l23]
+	scene
 end
 
 # ╔═╡ de79c2a2-29bf-11eb-0ba7-5574d8c69216
@@ -382,63 +295,8 @@ let
 	vals2, title2 = list2[min(end, t)]
 	bar_vals2[] = vals2
 	title_text2[] = title2
-	scene4
+	joint_scene
 end
-
-# ╔═╡ 420ad606-29c5-11eb-0e8b-83e60fde6470
-record(scene4, "anim.gif", ts, framerate=1, sleep=false, compression=0) do t
-	vals, title = list[min(end, t)]
-	bar_vals[] = vals
-	title_text[] = title
-
-	vals2, title2 = list2[min(end, t)]
-	bar_vals2[] = vals2
-	title_text2[] = title2
-end
-
-# ╔═╡ 948d241e-29c1-11eb-1501-531452cec7a5
-scene3 = let
-	s, layout = layoutscene()
-
-	title1 = layout[1, 1] = LText(s, "a$plus + b$minus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title1.tellwidth = false
-	
-	title2 = layout[1, 3] = LText(s, "b$plus + a$minus",
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title2.tellwidth = false
-	
-	layout[2,1] = ax1 = LAxis(s)
-	AbstractPlotting.barplot!(ax1, 1:d, list2[1][1], color = colors[1], ylims=ex2)
-
-	layout[2,3] = ax2 = LAxis(s)
-	AbstractPlotting.barplot!(ax2, 1:d, list2[end][1], color = colors[1], ylims=ex2)
-
-	title_mid = layout[1,2] = LText(s, title_text2,
-    textsize = 30, font = FONT, color = (:black, 0.25))
-	title_mid.tellwidth=false
-	
-	layout[2,2] = ax = LAxis(s)
-	AbstractPlotting.barplot!(ax, 1:d, bar_vals2, color = colors[1], ylims=ex2)
-
-	linkyaxes!(ax1, ax2, ax)
-	
-	s;
-end
-
-# ╔═╡ e50cc79a-29b8-11eb-36d6-5743d6836d3d
-scene = let
-	scene, layout = layoutscene()
-	layout[1,1] = ax = LAxis(scene)
-	AbstractPlotting.barplot!(ax, 1:d, bar_vals, color = colors[1], ylims=ex)
-
-	supertitle = layout[0, :] = LText(scene, title_text,
-    textsize = 30, font = FONT, color = (:black, 0.25))
-
-	supertitle.tellwidth = false
-	
-	scene
-end;
 
 # ╔═╡ Cell order:
 # ╠═535d9692-29b3-11eb-1ef4-1f3c7f559481
@@ -502,14 +360,12 @@ end;
 # ╠═507cb14e-2b1b-11eb-36b3-a134271c47ef
 # ╠═5e3f5d40-2b1b-11eb-18e4-5557c5b69a29
 # ╠═9627c1f0-29d3-11eb-2871-1ba3530f91f4
+# ╠═4e690274-2b23-11eb-2907-5546c62231d3
+# ╠═b5ef9b9a-2b20-11eb-2c94-5db769d419ad
+# ╠═ddc87348-2b21-11eb-1079-0f662e8190f5
 # ╠═64d9a390-29ba-11eb-211d-8ff252146626
 # ╠═14c2f17e-29bb-11eb-3e39-d99c9eb1f1ef
 # ╠═de79c2a2-29bf-11eb-0ba7-5574d8c69216
 # ╠═e552abf4-29c5-11eb-2c7e-33ba6bd2a502
-# ╠═420ad606-29c5-11eb-0e8b-83e60fde6470
-# ╠═9cb9ac38-29d8-11eb-3d8f-c52413f91d36
-# ╠═f5751dfc-29be-11eb-2a35-79fd0c2858c6
-# ╠═e084a776-29c0-11eb-0376-85c7b4622737
-# ╠═948d241e-29c1-11eb-1501-531452cec7a5
-# ╠═e50cc79a-29b8-11eb-36d6-5743d6836d3d
+# ╠═8d29425c-2b22-11eb-1c7a-07a74ee372c3
 # ╠═35e9872a-29b9-11eb-18c6-fd932571d10b
