@@ -10,7 +10,7 @@ module UnbalancedOptimalTransport
 
 using LinearAlgebra: norm
 
-export DiscreteMeasure,
+export DiscreteMeasure, SignedMeasure,
     OT!, optimal_coupling!, sinkhorn_divergence!, unbalanced_sinkhorn!, cost_matrix
 
 struct DiscreteMeasure{P,LP,S,T}
@@ -58,4 +58,42 @@ include("sinkhorn.jl")
 include("optimized_methods.jl")
 include("utilities.jl")
 
+struct SignedMeasure{P, N}
+    pos::DiscreteMeasure{P}
+    neg::DiscreteMeasure{N}
 end
+
+function SignedMeasure(density)
+    pos_inds = findall(>(0), density)
+    pos = DiscreteMeasure(density[pos_inds], pos_inds)
+    neg_inds = findall(<(0), density)
+    neg = DiscreteMeasure(-1 * density[neg_inds], neg_inds)
+    return SignedMeasure(pos, neg)
+end
+
+function Base.:(+)(a::DiscreteMeasure, b::DiscreteMeasure)
+    T_set = promote_type(eltype(a.set), eltype(b.set))
+    T_density =  promote_type(eltype(a.density), eltype(b.density))
+    set_to_density = Dict{T_set, T_density}()
+
+    for (i, x) in enumerate(a.set)
+        v = get(set_to_density, x, zero(T_density))
+        set_to_density[x] = v + a.density[i]
+    end
+
+    for (i, x) in enumerate(b.set)
+        v = get(set_to_density, x, zero(T_density))
+        set_to_density[x] = v + b.density[i]
+    end
+    
+    set = collect(keys(set_to_density))
+    density = collect(values(set_to_density))
+    return DiscreteMeasure(density, set)
+end
+
+export make_measures
+function make_measures(a::SignedMeasure, b::SignedMeasure)
+    return a.pos + b.neg, b.pos + a.neg
+end
+
+end # module
