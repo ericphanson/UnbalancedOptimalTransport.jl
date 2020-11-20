@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.10
+# v0.12.11
 
 using Markdown
 using InteractiveUtils
@@ -62,14 +62,12 @@ am = SignedMeasure(a)
 bm = SignedMeasure(b)
 
 # ╔═╡ 5be87ed2-29b3-11eb-32e4-7f6093c1ed0c
-##
 x, y = make_measures(am, bm)
 
 # ╔═╡ 9c05d88c-29b5-11eb-314f-ade1d0f49cea
 C = [norm(x.set[i] - y.set[j]) for i = eachindex(x.set), j = eachindex(y.set)]
 
 # ╔═╡ 5bfc5448-29b3-11eb-1941-d9bff0f425c6
-##
 D = KL(10.0)
 
 # ╔═╡ c14e7db6-29b4-11eb-1687-315faa512117
@@ -79,15 +77,6 @@ D = KL(10.0)
 coupling = optimal_coupling!(D, C, x, y, ϵ)
 
 # ╔═╡ 5c3c6c04-29b3-11eb-2142-e344978fb8e0
-# Unbalanced OT:
-# Start at `x`
-# Create/destroy mass to reach `μ`
-# Move to `ν` via the coupling
-# Create/destroy mass to reach `y`
-
-# π[i,j] = how much mass to move from `i` to `j`
-# \sum_j π[i,j] = how much mass to move from `i` to anywhere = μ
-
 function extended_vec(density, set, d)
     v = zeros(d)
     for i = eachindex(set, density)
@@ -173,9 +162,6 @@ total_cost = cost_unbal1 + cost_transport + cost_unbal2 + cost_reg
 # ╔═╡ e2144ff0-29b4-11eb-020c-2dd0fd2ee6ad
 @test total_cost ≈ OT!(D, x, y, ϵ; tol=1e-5) atol=1e-3
 
-# ╔═╡ c61a604a-29b8-11eb-33c2-3b8296afbd3a
-AbstractPlotting.barplot(eachindex(b), b)
-
 # ╔═╡ aa9dfc18-29b9-11eb-1fdf-25f9e0a979fb
 bar_vals = Node(x_ext)
 
@@ -239,46 +225,8 @@ t
 # ╔═╡ e552abf4-29c5-11eb-2c7e-33ba6bd2a502
 ts = 1:max(length(list), length(list2))
 
-# ╔═╡ 9f05e05e-29d8-11eb-0996-990bb125b914
-let
-	time = Node(0.0)
-
-xs = LinRange(0, 7, 40)
-
-ys_1 = @lift(sin.(xs .- $time))
-ys_2 = @lift(cos.(xs .- $time) .+ 3)
-
-scene = lines(xs, ys_1, color = :blue, linewidth = 4)
-scatter!(scene, xs, ys_2, color = :red, markersize = 15)
-
-timestamps = 0:1/30:2
-
-record(scene, "time_animation.mp4", timestamps; framerate = 30) do t
-    time[] = t
-end
-end
-
-# ╔═╡ a704d754-29da-11eb-21d0-37b008704553
-
-
 # ╔═╡ 9cb9ac38-29d8-11eb-3d8f-c52413f91d36
 
-
-# ╔═╡ 909ccf72-29c0-11eb-1803-a3ce126b1d8c
-# let
-# 	vals, title = list2[min(end, t)]
-# 	bar_vals2[] = vals
-# 	title_text2[] = title
-# 	scene3
-# end
-
-# ╔═╡ ac166624-29ba-11eb-117e-c1eecec87137
-# let
-# 	vals, title = list[min(end, t)]
-# 	bar_vals[] = vals
-# 	title_text[] = title
-# 	scene
-# end
 
 # ╔═╡ 35e9872a-29b9-11eb-18c6-fd932571d10b
 colors = AbstractPlotting.current_default_theme()[:palette].color[]
@@ -492,15 +440,6 @@ scene = let
 	scene
 end;
 
-# ╔═╡ 5cc86fd8-29b3-11eb-3425-3702426a12ff
-# # start at `a`
-# a0 = a
-# a1 = a + extended_vec(mass_diff_start, x.set, d)
-
-
-# b0 = b + extended_vec(mass_diff_end, y.set, d)
-# b1 = b
-
 # ╔═╡ Cell order:
 # ╠═535d9692-29b3-11eb-1ef4-1f3c7f559481
 # ╠═5bad3192-29b3-11eb-343d-a77cb1f89144
@@ -508,6 +447,8 @@ end;
 # ╠═f5497004-29b3-11eb-3ead-5766e13c274a
 # ╠═56ae2176-29b6-11eb-1c7f-39cd7ff91f75
 # ╠═955137ba-29b6-11eb-1efc-1b919d6dfbde
+# ╠═84af5abc-29b7-11eb-38d8-d747d7309c91
+# ╠═fdabe84e-29b8-11eb-1556-157a0847c121
 # ╠═5baf5922-29b3-11eb-2a67-ef89bd104db8
 # ╠═5bc23a06-29b3-11eb-062c-393396ede7f2
 # ╠═a38e7f08-29bc-11eb-01f3-256e6c2313f9
@@ -544,9 +485,6 @@ end;
 # ╠═381db1f6-29b4-11eb-3e0c-c57c48820e76
 # ╠═d980f67a-29b4-11eb-0541-2dd4bd8e8dbb
 # ╠═e2144ff0-29b4-11eb-020c-2dd0fd2ee6ad
-# ╠═84af5abc-29b7-11eb-38d8-d747d7309c91
-# ╠═fdabe84e-29b8-11eb-1556-157a0847c121
-# ╠═c61a604a-29b8-11eb-33c2-3b8296afbd3a
 # ╠═aa9dfc18-29b9-11eb-1fdf-25f9e0a979fb
 # ╠═d92da068-29c0-11eb-12cb-f96655832b8a
 # ╠═004866c6-29bd-11eb-30c1-d7aecfa0fca3
@@ -561,22 +499,17 @@ end;
 # ╠═2a5875bc-29c1-11eb-20d0-47f8c5e3a5da
 # ╠═d63617ec-29ba-11eb-3fed-812bc2a2782b
 # ╠═b98a4cca-29d4-11eb-2e05-812d10497850
-# ╠═9627c1f0-29d3-11eb-2871-1ba3530f91f4
 # ╠═507cb14e-2b1b-11eb-36b3-a134271c47ef
 # ╠═5e3f5d40-2b1b-11eb-18e4-5557c5b69a29
+# ╠═9627c1f0-29d3-11eb-2871-1ba3530f91f4
 # ╠═64d9a390-29ba-11eb-211d-8ff252146626
 # ╠═14c2f17e-29bb-11eb-3e39-d99c9eb1f1ef
 # ╠═de79c2a2-29bf-11eb-0ba7-5574d8c69216
 # ╠═e552abf4-29c5-11eb-2c7e-33ba6bd2a502
 # ╠═420ad606-29c5-11eb-0e8b-83e60fde6470
-# ╠═9f05e05e-29d8-11eb-0996-990bb125b914
-# ╠═a704d754-29da-11eb-21d0-37b008704553
 # ╠═9cb9ac38-29d8-11eb-3d8f-c52413f91d36
-# ╠═909ccf72-29c0-11eb-1803-a3ce126b1d8c
-# ╠═ac166624-29ba-11eb-117e-c1eecec87137
 # ╠═f5751dfc-29be-11eb-2a35-79fd0c2858c6
 # ╠═e084a776-29c0-11eb-0376-85c7b4622737
 # ╠═948d241e-29c1-11eb-1501-531452cec7a5
 # ╠═e50cc79a-29b8-11eb-36d6-5743d6836d3d
 # ╠═35e9872a-29b9-11eb-18c6-fd932571d10b
-# ╠═5cc86fd8-29b3-11eb-3425-3702426a12ff
