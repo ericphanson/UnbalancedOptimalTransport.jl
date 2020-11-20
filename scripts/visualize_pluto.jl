@@ -47,7 +47,7 @@ using PlutoUI
 md"# Optimal transport"
 
 # ╔═╡ ba877b44-2b54-11eb-0a06-ed34fe010d50
-
+# General explanation and preamble
 
 # ╔═╡ 3e2f024c-2b54-11eb-38c3-494488526f66
 md"# Signed transport: special case 1"
@@ -98,6 +98,9 @@ md"Luckily, we've chosen $a$ and $b$ so that $a_+ + b_-$ and $b_+ + a_-$ have th
 # ╔═╡ 227c4dec-2b5a-11eb-077f-cd1a91657013
 @bind t2 PlutoUI.Clock()
 
+# ╔═╡ d8188f62-2b5a-11eb-350b-bf6e95700aa5
+md"We now see what needs to be done to treat the general case: we need to solve the transport problem for positive vectors which do not have the same total mass, i.e. **unbalanced transport**."
+
 # ╔═╡ 9e8f69e4-2b54-11eb-0c5c-353c741d5417
 md"# Unbalanced positive transport"
 
@@ -112,10 +115,6 @@ md"# Signed transport: general case"
 
 # ╔═╡ 71e2a2e8-2b58-11eb-07eb-b522b7bea98c
 md"# Choices" 
-
-# ╔═╡ 5bfc5448-29b3-11eb-1941-d9bff0f425c6
-#D = KL(10.0)
-D = Balanced()
 
 # ╔═╡ c14e7db6-29b4-11eb-1687-315faa512117
 ϵ = 0.001
@@ -140,12 +139,6 @@ end
 
 # ╔═╡ 5bc343b0-29b3-11eb-3e5a-df86461a783d
 a = 10 .* (rand_normalized(d) - rand_normalized(d))
-
-# ╔═╡ 5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
-am = SignedMeasure(a)
-
-# ╔═╡ 5bd681a0-29b3-11eb-0ca5-630541f87c60
-bm = SignedMeasure(b)
 
 # ╔═╡ 5c3c6c04-29b3-11eb-2142-e344978fb8e0
 function extended_vec(density, set, d)
@@ -175,7 +168,7 @@ convex_combination(x,y,t) = (1 .- t) .* x .+ t .* y
 convex_combination(x,y) = t -> convex_combination(x,y,t)
 
 # ╔═╡ 214cf31e-2b27-11eb-1fbd-d50cfd38a1b7
-function make_list(a, a_name, b, b_name, ab_conv)
+function make_list(D, a, a_name, b, b_name, ab_conv)
 	
 	list = [(a, a_name)]
 	
@@ -183,7 +176,9 @@ function make_list(a, a_name, b, b_name, ab_conv)
 		push!(list, (ab_conv(0), "Create/destroy mass"))
 	end
 	
-	append!(list, [(ab_conv(0.25), "Transport 25%"), (ab_conv(0.5), "Transport 50%"), (ab_conv(0.75), "Transport 75%"),  (ab_conv(1), "Transport 100%")])
+	for t in 1:5
+		push!(list, (ab_conv(t/5), "Transport ($(t*20)%)"))
+	end
 	
 	if !(D isa Balanced)
 		push!(list, (b, "Create/destroy mass"))
@@ -239,12 +234,6 @@ b2 = shuffle!([sum(pos(a2)) * rand_normalized(d ÷ 2); -sum(neg(a2)) * rand_norm
 
 # ╔═╡ 3e6886d6-2b2a-11eb-1c5f-c786380bdc51
 extended_vec(sm::SignedMeasure, d) = extended_vec(pos(sm), d) - extended_vec(neg(sm), d)
-
-# ╔═╡ 32731c08-2b49-11eb-3358-bf9fc08f6004
-extended_vec(am.pos,d) ≈ pos(a)
-
-# ╔═╡ 41fffad2-2b49-11eb-2601-81a7941b0474
-extended_vec(am.neg,d) ≈ neg(a)
 
 # ╔═╡ c532b756-2b28-11eb-2d2f-c1ca7e2046e1
 function get_transitions(D::UnbalancedOptimalTransport.AbstractDivergence, ϵ, x::DiscreteMeasure, y::DiscreteMeasure, d)
@@ -369,11 +358,11 @@ function _transition_plot!(scene, list, bar_vals, title_text; kwargs...)
 end
 
 # ╔═╡ 87722ef4-2b2a-11eb-1ffe-03fd75e12532
-function transport_plot!(scene, a_name, b_name, transitions; repeat = false, kwargs...)
+function transport_plot!(scene, D, a_name, b_name, transitions; repeat = false, kwargs...)
 	
 	a, a0, b0, b = transitions
 	
-	list = make_list(a, a_name, b, b_name, convex_combination(a0, b0))
+	list = make_list(D, a, a_name, b, b_name, convex_combination(a0, b0))
 	@info length(list)
 
 	title_text = Node(" ")
@@ -397,15 +386,15 @@ function transport_plot!(scene, a_name, b_name, transitions; repeat = false, kwa
 end
 
 # ╔═╡ 7cb2ec38-2b34-11eb-0131-03c09f0f3581
-function transport_anim_both!(scene, a, aname, b, bname; ab_name1 ="$aname$plus + $bname$minus", ab_name2 = "$bname$plus + $aname$minus",  kwargs...)
+function transport_anim_both!(scene, D, ϵ, a, aname, b, bname; ab_name1 ="$aname$plus + $bname$minus", ab_name2 = "$bname$plus + $aname$minus",  kwargs...)
 	layout = GridLayout()
 	
 	x, y = make_measures(a,b)
-	l1, up1 = transport_plot!(scene, ab_name1, ab_name2, get_transitions(D, ϵ, x, y, d); kwargs...)
+	l1, up1 = transport_plot!(scene, D, ab_name1, ab_name2, get_transitions(D, ϵ, x, y, d); kwargs...)
 	
 	layout[1,1] = l1
 	
-	l2, up2 = transport_plot!(scene, "a", "b", get_transitions(D, ϵ, a, b, d); kwargs...)
+	l2, up2 = transport_plot!(scene, D, "a", "b", get_transitions(D, ϵ, a, b, d); kwargs...)
 	layout[2,1] = l2
 	
 	up = t -> (up1(t); up2(t); nothing)
@@ -416,7 +405,7 @@ end
 # ╔═╡ 3e51a966-2b34-11eb-035b-ddca47de3459
 signed_transport_scene, up = let
 	scene, layout = layoutscene()
-	l, u = transport_anim_both!(scene, SignedMeasure(a), "a", SignedMeasure(b), "b"; ab_name1 = "a$plus", ab_name2 = "a$minus")
+	l, u = transport_anim_both!(scene, Balanced(), ϵ, SignedMeasure(a), "a", SignedMeasure(b), "b"; ab_name1 = "a$plus", ab_name2 = "a$minus")
 	layout[1, 1] = l
 	scene, u
 end
@@ -430,7 +419,7 @@ end
 # ╔═╡ 4a71ec26-2b5a-11eb-2ad8-0bb517c71847
 signed_transport_scene2, up2 = let
 	scene, layout = layoutscene()
-	l, u = transport_anim_both!(scene, SignedMeasure(a2), "a", SignedMeasure(b2), "b"; color = colors[2])
+	l, u = transport_anim_both!(scene, Balanced(), ϵ, SignedMeasure(a2), "a", SignedMeasure(b2), "b"; color = colors[2])
 	layout[1, 1] = l
 	scene, u
 end
@@ -451,23 +440,6 @@ entropy(a::AbstractArray) = sum(x -> -x * lg(x), a)
 function divergence(::KL{ρ}, a, b) where {ρ}
     ρ * (-entropy(a) - dot(a, lg.(b)) + sum(b - a))
 end
-
-# ╔═╡ d750b1d6-2b37-11eb-1fa1-4fad6904a144
-t0 = Ref(0)
-
-# ╔═╡ c16ae7b0-2b37-11eb-271f-791043d98a3e
-@bind click PlutoUI.Button()
-
-# ╔═╡ 0dcffaec-2b35-11eb-1329-197b99f7c08f
-begin
-	click
-	up(t0[] += 1)
-	t0val = t0[]
-	signed_transport_scene
-end
-
-# ╔═╡ f7c242ea-2b37-11eb-0389-07bef2f1e86c
-mod1(t0val, D isa Balanced ? 6 : 8)
 
 # ╔═╡ Cell order:
 # ╟─988bf8e4-2b54-11eb-0a90-5baaf35eaa4c
@@ -490,12 +462,12 @@ mod1(t0val, D isa Balanced ? 6 : 8)
 # ╟─01efdcba-2b5a-11eb-0fee-bbb86fdab23f
 # ╟─227c4dec-2b5a-11eb-077f-cd1a91657013
 # ╟─2962c1d6-2b5a-11eb-025b-23d28581febd
-# ╠═9e8f69e4-2b54-11eb-0c5c-353c741d5417
+# ╟─d8188f62-2b5a-11eb-350b-bf6e95700aa5
+# ╟─9e8f69e4-2b54-11eb-0c5c-353c741d5417
 # ╠═b473839c-2b54-11eb-33cd-91b352c48226
 # ╠═a48a36c2-2b54-11eb-1a08-859efec67f94
 # ╠═b5044648-2b54-11eb-0c07-757bba7a0b1d
 # ╟─71e2a2e8-2b58-11eb-07eb-b522b7bea98c
-# ╠═5bfc5448-29b3-11eb-1941-d9bff0f425c6
 # ╠═c14e7db6-29b4-11eb-1687-315faa512117
 # ╟─5baf5922-29b3-11eb-2a67-ef89bd104db8
 # ╟─5bc23a06-29b3-11eb-062c-393396ede7f2
@@ -513,10 +485,6 @@ mod1(t0val, D isa Balanced ? 6 : 8)
 # ╠═84af5abc-29b7-11eb-38d8-d747d7309c91
 # ╠═fdabe84e-29b8-11eb-1556-157a0847c121
 # ╠═a38e7f08-29bc-11eb-01f3-256e6c2313f9
-# ╠═5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
-# ╠═32731c08-2b49-11eb-3358-bf9fc08f6004
-# ╠═41fffad2-2b49-11eb-2601-81a7941b0474
-# ╠═5bd681a0-29b3-11eb-0ca5-630541f87c60
 # ╠═3e51a966-2b34-11eb-035b-ddca47de3459
 # ╠═4a71ec26-2b5a-11eb-2ad8-0bb517c71847
 # ╠═c532b756-2b28-11eb-2d2f-c1ca7e2046e1
@@ -548,7 +516,3 @@ mod1(t0val, D isa Balanced ? 6 : 8)
 # ╠═5c626206-29b3-11eb-2cae-275536bd1ab6
 # ╠═5c6f5238-29b3-11eb-1962-65fe06d73f08
 # ╠═5c7b5d92-29b3-11eb-2c0b-01e0dbf269a7
-# ╠═d750b1d6-2b37-11eb-1fa1-4fad6904a144
-# ╠═c16ae7b0-2b37-11eb-271f-791043d98a3e
-# ╟─f7c242ea-2b37-11eb-0389-07bef2f1e86c
-# ╠═0dcffaec-2b35-11eb-1329-197b99f7c08f
