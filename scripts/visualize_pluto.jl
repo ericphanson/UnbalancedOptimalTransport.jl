@@ -20,7 +20,7 @@ using UnbalancedOptimalTransport
 using UnbalancedOptimalTransport: KL, Balanced
 
 # ╔═╡ 8c677950-2b48-11eb-1843-356af0ab079d
-using Markdown
+using Markdown, Random
 
 # ╔═╡ 7ff472ae-29b3-11eb-267b-59058f5f5e85
 using LinearAlgebra
@@ -43,8 +43,14 @@ using AbstractPlotting.MakieLayout
 # ╔═╡ 3ec9e128-2b35-11eb-3632-75687fc22283
 using PlutoUI
 
+# ╔═╡ 988bf8e4-2b54-11eb-0a90-5baaf35eaa4c
+md"# Optimal transport"
+
+# ╔═╡ ba877b44-2b54-11eb-0a06-ed34fe010d50
+
+
 # ╔═╡ 3e2f024c-2b54-11eb-38c3-494488526f66
-md"# Signed transport (1)"
+md"# Signed transport: special case 1"
 
 # ╔═╡ be58708c-2b26-11eb-2be3-e5a5b6d06324
 md"""
@@ -61,6 +67,68 @@ We can see that to transport $a$ to $b$, we could instead look at how to transpo
 # ╔═╡ 64d9a390-29ba-11eb-211d-8ff252146626
 @bind t PlutoUI.Clock()
 
+# ╔═╡ 55fd407c-2b55-11eb-25a8-95b498153d2a
+md"# Signed transport: special case 2"
+
+# ╔═╡ 63e2bbd6-2b55-11eb-0634-7f7bc7411750
+md"Let's consider a slightly more general case. Instead of $b$ being zero, let's chose a pair of non-zero signed vectors."
+
+# ╔═╡ c7cd855e-2b58-11eb-3363-21d8f7299e05
+md"We can inspect their decomposition into positive and negative parts, where $a = a_+ - a_-$ and $b = b_+ - b_-$:"
+
+# ╔═╡ 19b0f808-2b59-11eb-3afd-3184c03c2ae6
+md"Just as in the previous case, we can reformulate this as transport problem between positive vectors. This time, we wish to transport the mass from $a_+ + b_-$ to $b_+ + a_-$.
+
+Why? If we have a coupling which can rearrange $a_+ + b_-$ into $b_+ + a_-$, then the coupling gives a map
+
+$$v \mapsto v + (b_+ + a_-) - (a_+ + b_-)$$
+
+So if we apply it to $a = a_+ - a_-$, then we get out
+
+$$a \mapsto a_+ - a_- + (b_+ + a_-) - (a_+ + b_-) = b_+ - b_-$$
+
+which is just $b$, as desired.
+
+Thus, we simply need to solve the optimal transport problem between these two:
+"
+
+# ╔═╡ 01efdcba-2b5a-11eb-0fee-bbb86fdab23f
+md"Luckily, we've chosen $a$ and $b$ so that $a_+ + b_-$ and $b_+ + a_-$ have the same total mass, just as in the previous case. That means we can solve the optimal transport problem and recover a solution:"
+
+# ╔═╡ 227c4dec-2b5a-11eb-077f-cd1a91657013
+@bind t2 PlutoUI.Clock()
+
+# ╔═╡ 9e8f69e4-2b54-11eb-0c5c-353c741d5417
+md"# Unbalanced positive transport"
+
+# ╔═╡ b473839c-2b54-11eb-33cd-91b352c48226
+
+
+# ╔═╡ a48a36c2-2b54-11eb-1a08-859efec67f94
+md"# Signed transport: general case"
+
+# ╔═╡ b5044648-2b54-11eb-0c07-757bba7a0b1d
+
+
+# ╔═╡ 71e2a2e8-2b58-11eb-07eb-b522b7bea98c
+md"# Choices" 
+
+# ╔═╡ 5bfc5448-29b3-11eb-1941-d9bff0f425c6
+#D = KL(10.0)
+D = Balanced()
+
+# ╔═╡ c14e7db6-29b4-11eb-1687-315faa512117
+ϵ = 0.001
+
+# ╔═╡ 5baf5922-29b3-11eb-2a67-ef89bd104db8
+d = 10
+
+# ╔═╡ 5bc23a06-29b3-11eb-062c-393396ede7f2
+b = zeros(d)
+
+# ╔═╡ f17a5ce2-2b55-11eb-37a2-4d56fad8b4b3
+a2 = 10*(rand(d) - rand(d))
+
 # ╔═╡ 3975431a-2b54-11eb-0c7a-2b5d7878de97
 md"# Code"
 
@@ -70,12 +138,14 @@ function rand_normalized(d)
 	return a / sum(a)
 end
 
-# ╔═╡ 5bfc5448-29b3-11eb-1941-d9bff0f425c6
-#D = KL(10.0)
-D = Balanced()
+# ╔═╡ 5bc343b0-29b3-11eb-3e5a-df86461a783d
+a = 10 .* (rand_normalized(d) - rand_normalized(d))
 
-# ╔═╡ c14e7db6-29b4-11eb-1687-315faa512117
-ϵ = 0.001
+# ╔═╡ 5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
+am = SignedMeasure(a)
+
+# ╔═╡ 5bd681a0-29b3-11eb-0ca5-630541f87c60
+bm = SignedMeasure(b)
 
 # ╔═╡ 5c3c6c04-29b3-11eb-2142-e344978fb8e0
 function extended_vec(density, set, d)
@@ -134,24 +204,6 @@ function get_ylims(list)
 	return (m - lower_buffer, M + upper_buffer)
 end
 
-# ╔═╡ 5baf5922-29b3-11eb-2a67-ef89bd104db8
-d = 10
-
-# ╔═╡ 5bc23a06-29b3-11eb-062c-393396ede7f2
-b = zeros(d)
-
-# ╔═╡ 5bd681a0-29b3-11eb-0ca5-630541f87c60
-bm = SignedMeasure(b)
-
-# ╔═╡ 5bc343b0-29b3-11eb-3e5a-df86461a783d
-a = 10 .* (rand_normalized(d) - rand_normalized(d))
-
-# ╔═╡ 5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
-am = SignedMeasure(a)
-
-# ╔═╡ b8e4fd28-29bc-11eb-0b85-bfbbf8a3c3d4
-sum(a)
-
 # ╔═╡ 4e690274-2b23-11eb-2907-5546c62231d3
 begin
 	maybe_lift(f, x::Observable) = lift(f, x)
@@ -181,6 +233,9 @@ neg(v) = -min.(v, 0)
 
 # ╔═╡ 53468264-2b49-11eb-3235-d166a7cf2b54
 neg(v::SignedMeasure) = v.neg
+
+# ╔═╡ 71e3f3a6-2b55-11eb-2d2a-d5a604785ddf
+b2 = shuffle!([sum(pos(a2)) * rand_normalized(d ÷ 2); -sum(neg(a2)) * rand_normalized(d ÷ 2)])
 
 # ╔═╡ 3e6886d6-2b2a-11eb-1c5f-c786380bdc51
 extended_vec(sm::SignedMeasure, d) = extended_vec(pos(sm), d) - extended_vec(neg(sm), d)
@@ -249,6 +304,28 @@ let
 	scene
 end
 
+# ╔═╡ 3d1d0440-2b58-11eb-12b0-fbdf499e54ae
+let
+	scene, layout = layoutscene()
+	l1, ax1 = barplot_with_title!(scene, a2, "a", color = colors[2])
+	l2, ax2 = barplot_with_title!(scene, b2, "b", color = colors[2])
+	linkyaxes!(ax1, ax2)
+
+	layout[1, 1:2] = [l1, l2]
+	scene
+end
+
+# ╔═╡ 02d85880-2b59-11eb-204c-cfe9f0e198b2
+let
+	scene, layout = layoutscene()
+	l1, ax1 = barplot_with_title!(scene, pos(a2) + neg(b2), "a$plus + b$minus", color = colors[2])
+	l2, ax2 = barplot_with_title!(scene, pos(b2) + neg(a2), "b$plus + a$minus", color = colors[2])
+	linkyaxes!(ax1, ax2)
+
+	layout[1, 1:2] = [l1, l2]
+	scene
+end
+
 # ╔═╡ ddc87348-2b21-11eb-1079-0f662e8190f5
 function barplot_pos_neg!(scene, v, name; ylims = (minimum(v)-1, maximum(v)+1), kwargs...)
 	layout = GridLayout()	
@@ -264,6 +341,15 @@ end
 let
 	scene, layout = layoutscene()
 	layout[1,1] = barplot_pos_neg!(scene, a, "a")
+	scene
+end
+
+# ╔═╡ aa72c7a0-2b58-11eb-1969-05213e08dd22
+let
+	scene, layout = layoutscene()
+	l1 = barplot_pos_neg!(scene, a2, "a", color = colors[2])
+	l2 = barplot_pos_neg!(scene, b2, "b", color = colors[2])
+	layout[1:2, 1] = [l1, l2]
 	scene
 end
 
@@ -330,7 +416,7 @@ end
 # ╔═╡ 3e51a966-2b34-11eb-035b-ddca47de3459
 signed_transport_scene, up = let
 	scene, layout = layoutscene()
-	l, u = transport_anim_both!(scene, am, "a", bm, "b"; ab_name1 = "a$plus", ab_name2 = "a$minus")
+	l, u = transport_anim_both!(scene, SignedMeasure(a), "a", SignedMeasure(b), "b"; ab_name1 = "a$plus", ab_name2 = "a$minus")
 	layout[1, 1] = l
 	scene, u
 end
@@ -339,6 +425,20 @@ end
 begin
 	up(t)
 	signed_transport_scene
+end
+
+# ╔═╡ 4a71ec26-2b5a-11eb-2ad8-0bb517c71847
+signed_transport_scene2, up2 = let
+	scene, layout = layoutscene()
+	l, u = transport_anim_both!(scene, SignedMeasure(a2), "a", SignedMeasure(b2), "b"; color = colors[2])
+	layout[1, 1] = l
+	scene, u
+end
+
+# ╔═╡ 2962c1d6-2b5a-11eb-025b-23d28581febd
+begin
+	up2(t2)
+	signed_transport_scene2
 end
 
 # ╔═╡ 5c626206-29b3-11eb-2cae-275536bd1ab6
@@ -370,6 +470,8 @@ end
 mod1(t0val, D isa Balanced ? 6 : 8)
 
 # ╔═╡ Cell order:
+# ╟─988bf8e4-2b54-11eb-0a90-5baaf35eaa4c
+# ╠═ba877b44-2b54-11eb-0a06-ed34fe010d50
 # ╟─3e2f024c-2b54-11eb-38c3-494488526f66
 # ╟─be58708c-2b26-11eb-2be3-e5a5b6d06324
 # ╟─91998cc8-2b44-11eb-3e6a-090dd9a3debf
@@ -378,6 +480,28 @@ mod1(t0val, D isa Balanced ? 6 : 8)
 # ╟─c728610c-2b49-11eb-1397-c91c9caf48bf
 # ╠═64d9a390-29ba-11eb-211d-8ff252146626
 # ╟─de79c2a2-29bf-11eb-0ba7-5574d8c69216
+# ╟─55fd407c-2b55-11eb-25a8-95b498153d2a
+# ╟─63e2bbd6-2b55-11eb-0634-7f7bc7411750
+# ╟─3d1d0440-2b58-11eb-12b0-fbdf499e54ae
+# ╟─c7cd855e-2b58-11eb-3363-21d8f7299e05
+# ╟─aa72c7a0-2b58-11eb-1969-05213e08dd22
+# ╟─19b0f808-2b59-11eb-3afd-3184c03c2ae6
+# ╟─02d85880-2b59-11eb-204c-cfe9f0e198b2
+# ╟─01efdcba-2b5a-11eb-0fee-bbb86fdab23f
+# ╟─227c4dec-2b5a-11eb-077f-cd1a91657013
+# ╟─2962c1d6-2b5a-11eb-025b-23d28581febd
+# ╠═9e8f69e4-2b54-11eb-0c5c-353c741d5417
+# ╠═b473839c-2b54-11eb-33cd-91b352c48226
+# ╠═a48a36c2-2b54-11eb-1a08-859efec67f94
+# ╠═b5044648-2b54-11eb-0c07-757bba7a0b1d
+# ╟─71e2a2e8-2b58-11eb-07eb-b522b7bea98c
+# ╠═5bfc5448-29b3-11eb-1941-d9bff0f425c6
+# ╠═c14e7db6-29b4-11eb-1687-315faa512117
+# ╟─5baf5922-29b3-11eb-2a67-ef89bd104db8
+# ╟─5bc23a06-29b3-11eb-062c-393396ede7f2
+# ╟─5bc343b0-29b3-11eb-3e5a-df86461a783d
+# ╟─f17a5ce2-2b55-11eb-37a2-4d56fad8b4b3
+# ╟─71e3f3a6-2b55-11eb-2d2a-d5a604785ddf
 # ╟─3975431a-2b54-11eb-0c7a-2b5d7878de97
 # ╠═535d9692-29b3-11eb-1ef4-1f3c7f559481
 # ╠═5bad3192-29b3-11eb-343d-a77cb1f89144
@@ -393,8 +517,8 @@ mod1(t0val, D isa Balanced ? 6 : 8)
 # ╠═32731c08-2b49-11eb-3358-bf9fc08f6004
 # ╠═41fffad2-2b49-11eb-2601-81a7941b0474
 # ╠═5bd681a0-29b3-11eb-0ca5-630541f87c60
-# ╠═5bfc5448-29b3-11eb-1941-d9bff0f425c6
-# ╠═c14e7db6-29b4-11eb-1687-315faa512117
+# ╠═3e51a966-2b34-11eb-035b-ddca47de3459
+# ╠═4a71ec26-2b5a-11eb-2ad8-0bb517c71847
 # ╠═c532b756-2b28-11eb-2d2f-c1ca7e2046e1
 # ╠═e8185fae-2b29-11eb-1b03-d35e774da123
 # ╠═5c3c6c04-29b3-11eb-2142-e344978fb8e0
@@ -407,11 +531,6 @@ mod1(t0val, D isa Balanced ? 6 : 8)
 # ╠═4a32067a-2b31-11eb-28c5-1519242d8284
 # ╠═87722ef4-2b2a-11eb-1ffe-03fd75e12532
 # ╠═7cb2ec38-2b34-11eb-0131-03c09f0f3581
-# ╠═3e51a966-2b34-11eb-035b-ddca47de3459
-# ╟─5baf5922-29b3-11eb-2a67-ef89bd104db8
-# ╟─5bc23a06-29b3-11eb-062c-393396ede7f2
-# ╟─5bc343b0-29b3-11eb-3e5a-df86461a783d
-# ╠═b8e4fd28-29bc-11eb-0b85-bfbbf8a3c3d4
 # ╠═4e690274-2b23-11eb-2907-5546c62231d3
 # ╠═b98a4cca-29d4-11eb-2e05-812d10497850
 # ╠═507cb14e-2b1b-11eb-36b3-a134271c47ef
