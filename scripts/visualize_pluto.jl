@@ -19,6 +19,9 @@ using UnbalancedOptimalTransport
 # ╔═╡ 5bad3192-29b3-11eb-343d-a77cb1f89144
 using UnbalancedOptimalTransport: KL, Balanced
 
+# ╔═╡ 8c677950-2b48-11eb-1843-356af0ab079d
+using Markdown
+
 # ╔═╡ 7ff472ae-29b3-11eb-267b-59058f5f5e85
 using LinearAlgebra
 
@@ -40,26 +43,32 @@ using AbstractPlotting.MakieLayout
 # ╔═╡ 3ec9e128-2b35-11eb-3632-75687fc22283
 using PlutoUI
 
-# ╔═╡ 5baf5922-29b3-11eb-2a67-ef89bd104db8
-d = 10
+# ╔═╡ 3e2f024c-2b54-11eb-38c3-494488526f66
+md"# Signed transport (1)"
 
-# ╔═╡ 5bc23a06-29b3-11eb-062c-393396ede7f2
-a = zeros(d)
+# ╔═╡ be58708c-2b26-11eb-2be3-e5a5b6d06324
+md"""
+Consider the task of transporting vector `a` which has equal amounts of positive and negative mass to the zero vector `a`. That means we want to rearrange the mass in `b` until it all cancels out. It costs $1$ to move $1$ unit of (positive or negative) mass one step to the left or right, and we wish to minimize the cost of this rearrangement.
+"""
+
+# ╔═╡ c728610c-2b49-11eb-1397-c91c9caf48bf
+md"""
+Recall that by solving the optimal transport problem we obtain the optimal coupling, which is a matrix whose $(i,j)$th entry tells us how much mass to move from site $i$ to site $j$,
+
+We can see that to transport $a$ to $b$, we could instead look at how to transport $a_+$ to $a_-$: the optimal coupling for that problem tells us how to move the mass in $a_+$ to obtain $a_-$, but if we apply it to $a$, we end up at $b$, because we've exactly moved the positive mass of $a$ onto the negative mass of $a$, cancelling it out!
+"""
+
+# ╔═╡ 64d9a390-29ba-11eb-211d-8ff252146626
+@bind t PlutoUI.Clock()
+
+# ╔═╡ 3975431a-2b54-11eb-0c7a-2b5d7878de97
+md"# Code"
 
 # ╔═╡ a38e7f08-29bc-11eb-01f3-256e6c2313f9
-rand_unit(d) = (a =rand(d); a / sum(a) )
-
-# ╔═╡ 5bc343b0-29b3-11eb-3e5a-df86461a783d
-b = 10 .* ( rand_unit(d) - rand_unit(d))
-
-# ╔═╡ b8e4fd28-29bc-11eb-0b85-bfbbf8a3c3d4
-sum(b)
-
-# ╔═╡ 5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
-am = SignedMeasure(a)
-
-# ╔═╡ 5bd681a0-29b3-11eb-0ca5-630541f87c60
-bm = SignedMeasure(b)
+function rand_normalized(d)
+	a = rand(d)
+	return a / sum(a)
+end
 
 # ╔═╡ 5bfc5448-29b3-11eb-1941-d9bff0f425c6
 #D = KL(10.0)
@@ -80,21 +89,6 @@ end
 # ╔═╡ 5c480da2-29b3-11eb-1e71-fb742ec0fc67
 extended_vec(dm::DiscreteMeasure, d) = extended_vec(dm.density, dm.set, d)
 
-# ╔═╡ 3e6886d6-2b2a-11eb-1c5f-c786380bdc51
-extended_vec(sm::SignedMeasure, d) = extended_vec(sm.pos, d) - extended_vec(sm.neg, d)
-
-# ╔═╡ e8185fae-2b29-11eb-1b03-d35e774da123
-function get_transitions(D::UnbalancedOptimalTransport.AbstractDivergence, ϵ, a::SignedMeasure, b::SignedMeasure, d)
-	x, y = make_measures(a, b)
-	
-	x_ext, μ_ext, ν_ext, y_ext = get_transitions(D, ϵ, x, y, d)
-	
-	a_ext = extended_vec(a, d)
-	b_ext = extended_vec(b, d)
-	
-	return a_ext, a_ext - x_ext + μ_ext,  b_ext - y_ext + ν_ext, b_ext
-end
-
 # ╔═╡ 5c537656-29b3-11eb-2ed4-0d0bd0650fab
 function extended_coupling_matrix(coupling_matrix, set1, d1, set2, d2)
     m = zeros(d1, d2)
@@ -103,34 +97,6 @@ function extended_coupling_matrix(coupling_matrix, set1, d1, set2, d2)
     end
     return m
 end
-
-# ╔═╡ c532b756-2b28-11eb-2d2f-c1ca7e2046e1
-function get_transitions(D::UnbalancedOptimalTransport.AbstractDivergence, ϵ, x::DiscreteMeasure, y::DiscreteMeasure, d)
-	
-	C = [norm(x.set[i] - y.set[j]) for i = eachindex(x.set), j = eachindex(y.set)]
-	
-	coupling = optimal_coupling!(D, C, x, y, ϵ)
-
-	x_ext = extended_vec(x, d)
-	y_ext = extended_vec(y, d)
-	coupling_ext = extended_coupling_matrix(coupling, x.set, d, y.set, d)
-	μ_ext = vec(sum(coupling_ext, dims=2))
-	ν_ext = vec(sum(coupling_ext, dims=1))
-	
-	return x_ext, μ_ext, ν_ext, y_ext
-end
-
-# ╔═╡ 5c0ba9fc-29b3-11eb-398e-ddd48ee94fb6
-get_transitions(D, ϵ, am, bm, d)
-
-# ╔═╡ 993992be-2b37-11eb-0b1c-3ff64225a3c8
-t1, t2, t3, t4 = get_transitions(D, ϵ, make_measures(am, bm)..., d)
-
-# ╔═╡ af2f3dee-2b37-11eb-05ac-25320f758490
-t1
-
-# ╔═╡ a5391d50-2b37-11eb-34f6-2f5bc3e5588c
-t4
 
 # ╔═╡ 1ed870a8-29bb-11eb-3523-adcb5c6d9923
 convex_combination(x,y,t) = (1 .- t) .* x .+ t .* y
@@ -168,14 +134,29 @@ function get_ylims(list)
 	return (m - lower_buffer, M + upper_buffer)
 end
 
-# ╔═╡ d750b1d6-2b37-11eb-1fa1-4fad6904a144
-t0 = Ref(0)
+# ╔═╡ 5baf5922-29b3-11eb-2a67-ef89bd104db8
+d = 10
 
-# ╔═╡ c16ae7b0-2b37-11eb-271f-791043d98a3e
-@bind click PlutoUI.Button()
+# ╔═╡ 5bc23a06-29b3-11eb-062c-393396ede7f2
+b = zeros(d)
 
-# ╔═╡ 345b8e68-2b36-11eb-02ec-f90efaf891aa
-extrema(extended_vec(bm, d))
+# ╔═╡ 5bd681a0-29b3-11eb-0ca5-630541f87c60
+bm = SignedMeasure(b)
+
+# ╔═╡ 5bc343b0-29b3-11eb-3e5a-df86461a783d
+a = 10 .* (rand_normalized(d) - rand_normalized(d))
+
+# ╔═╡ 5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
+am = SignedMeasure(a)
+
+# ╔═╡ b8e4fd28-29bc-11eb-0b85-bfbbf8a3c3d4
+sum(a)
+
+# ╔═╡ 4e690274-2b23-11eb-2907-5546c62231d3
+begin
+	maybe_lift(f, x::Observable) = lift(f, x)
+	maybe_lift(f, x) = f(x)
+end
 
 # ╔═╡ b98a4cca-29d4-11eb-2e05-812d10497850
 FONT = "Julia Mono"
@@ -186,38 +167,104 @@ plus = '₊'
 # ╔═╡ 5e3f5d40-2b1b-11eb-18e4-5557c5b69a29
 minus = '₋'
 
-# ╔═╡ be58708c-2b26-11eb-2be3-e5a5b6d06324
-md"""
-Consider the task of optimal transporting the zero vector to a vector which has equal amounts of positive and negative mass.
-"""
+# ╔═╡ e86d4eb0-2b44-11eb-0ea2-c579b998317f
+Markdown.parse("Optimal transport requires positive masses. However, we can decompose our signed vectors into non-negative vectors, e.g. `a = a$plus - a$minus`:")
 
-# ╔═╡ 4e690274-2b23-11eb-2907-5546c62231d3
-begin
-	maybe_lift(f, x::Observable) = lift(f, x)
-	maybe_lift(f, x) = f(x)
+# ╔═╡ 0001bfe2-2b49-11eb-1607-259b06c569e6
+pos(v) =  max.(v, 0)
+
+# ╔═╡ 4d1fe84e-2b49-11eb-230f-aba60a20c75a
+pos(v::SignedMeasure) = v.pos
+
+# ╔═╡ 0f81c860-2b49-11eb-3113-031161588326
+neg(v) = -min.(v, 0)
+
+# ╔═╡ 53468264-2b49-11eb-3235-d166a7cf2b54
+neg(v::SignedMeasure) = v.neg
+
+# ╔═╡ 3e6886d6-2b2a-11eb-1c5f-c786380bdc51
+extended_vec(sm::SignedMeasure, d) = extended_vec(pos(sm), d) - extended_vec(neg(sm), d)
+
+# ╔═╡ 32731c08-2b49-11eb-3358-bf9fc08f6004
+extended_vec(am.pos,d) ≈ pos(a)
+
+# ╔═╡ 41fffad2-2b49-11eb-2601-81a7941b0474
+extended_vec(am.neg,d) ≈ neg(a)
+
+# ╔═╡ c532b756-2b28-11eb-2d2f-c1ca7e2046e1
+function get_transitions(D::UnbalancedOptimalTransport.AbstractDivergence, ϵ, x::DiscreteMeasure, y::DiscreteMeasure, d)
+	
+	C = [norm(x.set[i] - y.set[j]) for i = eachindex(x.set), j = eachindex(y.set)]
+	
+	coupling = optimal_coupling!(D, C, x, y, ϵ)
+
+	x_ext = extended_vec(x, d)
+	y_ext = extended_vec(y, d)
+	coupling_ext = extended_coupling_matrix(coupling, x.set, d, y.set, d)
+	μ_ext = vec(sum(coupling_ext, dims=2))
+	ν_ext = vec(sum(coupling_ext, dims=1))
+	
+	return x_ext, μ_ext, ν_ext, y_ext
 end
 
+# ╔═╡ e8185fae-2b29-11eb-1b03-d35e774da123
+function get_transitions(D::UnbalancedOptimalTransport.AbstractDivergence, ϵ, a::SignedMeasure, b::SignedMeasure, d)
+	x, y = make_measures(a, b)
+	
+	x_ext, μ_ext, ν_ext, y_ext = get_transitions(D, ϵ, x, y, d)
+	
+	a_ext = extended_vec(a, d)
+	b_ext = extended_vec(b, d)
+	
+	return a_ext, a_ext - x_ext + μ_ext,  b_ext - y_ext + ν_ext, b_ext
+end
+
+# ╔═╡ 35e9872a-29b9-11eb-18c6-fd932571d10b
+colors = AbstractPlotting.current_default_theme()[:palette].color[]
+
+# ╔═╡ bd50e5fa-2b44-11eb-318f-cb0171004c46
+default_color = colors[1]
+
 # ╔═╡ b5ef9b9a-2b20-11eb-2c94-5db769d419ad
-function barplot_with_title!(scene, data, title; kwargs...)
+function barplot_with_title!(scene, data, title; color = default_color, kwargs...)
 	layout = GridLayout()
 	layout[1, 1] = t = LText(scene, title, textsize = 30, font = FONT, color = (:black, 0.25))
 	t.tellwidth = false
 
 	layout[2, 1] = ax = LAxis(scene)
-	AbstractPlotting.barplot!(ax, maybe_lift(x -> 1:length(x), data), data; kwargs...)
+	AbstractPlotting.barplot!(ax, maybe_lift(x -> 1:length(x), data), data; color=color, kwargs...)
+	#ax.aspect = AxisAspect(2)
 	return (layout, ax)
 end
 
+
+# ╔═╡ 91998cc8-2b44-11eb-3e6a-090dd9a3debf
+let
+	scene, layout = layoutscene()
+	l1, ax1 = barplot_with_title!(scene, a, "a")
+	l2, ax2 = barplot_with_title!(scene, b, "b")
+	linkyaxes!(ax1, ax2)
+
+	layout[1, 1:2] = [l1, l2]
+	scene
+end
 
 # ╔═╡ ddc87348-2b21-11eb-1079-0f662e8190f5
 function barplot_pos_neg!(scene, v, name; ylims = (minimum(v)-1, maximum(v)+1), kwargs...)
 	layout = GridLayout()	
 	l1, ax1 = barplot_with_title!(scene, v, name; ylims, kwargs...)
-	l2, ax2 = barplot_with_title!(scene, max.(v, 0), "$name$minus"; ylims, kwargs...)
-	l3, ax3 = barplot_with_title!(scene, -min.(v, 0), "$name$plus"; ylims, kwargs...)
+	l2, ax2 = barplot_with_title!(scene, pos(v), "$name$plus"; ylims, kwargs...)
+	l3, ax3 = barplot_with_title!(scene, neg(v), "$name$minus"; ylims, kwargs...)
 	linkyaxes!(ax1, ax2, ax3)
 	layout[1, 1:3] = [l1, l2, l3]
 	return layout
+end
+
+# ╔═╡ 9627c1f0-29d3-11eb-2871-1ba3530f91f4
+let
+	scene, layout = layoutscene()
+	layout[1,1] = barplot_pos_neg!(scene, a, "a")
+	scene
 end
 
 # ╔═╡ 14d4d918-2b2b-11eb-31a8-051e0c39ce3f
@@ -236,7 +283,7 @@ function _transition_plot!(scene, list, bar_vals, title_text; kwargs...)
 end
 
 # ╔═╡ 87722ef4-2b2a-11eb-1ffe-03fd75e12532
-function transport_plot!(scene, a_name, b_name, transitions; kwargs...)
+function transport_plot!(scene, a_name, b_name, transitions; repeat = false, kwargs...)
 	
 	a, a0, b0, b = transitions
 	
@@ -247,7 +294,11 @@ function transport_plot!(scene, a_name, b_name, transitions; kwargs...)
 	bar_vals = Node(a)
 	
 	 up = function(t)
-		vals, title = list[mod1(t, end)]
+		if repeat
+			vals, title = list[mod1(t, end)]
+		else
+			vals, title = list[min(t, end)]
+		end
 		bar_vals[] = vals
 		title_text[] = title
 		return nothing
@@ -260,11 +311,11 @@ function transport_plot!(scene, a_name, b_name, transitions; kwargs...)
 end
 
 # ╔═╡ 7cb2ec38-2b34-11eb-0131-03c09f0f3581
-function transport_anim_both!(scene, a, aname, b, bname; kwargs...)
+function transport_anim_both!(scene, a, aname, b, bname; ab_name1 ="$aname$plus + $bname$minus", ab_name2 = "$bname$plus + $aname$minus",  kwargs...)
 	layout = GridLayout()
 	
 	x, y = make_measures(a,b)
-	l1, up1 = transport_plot!(scene, "$aname$plus + $bname$minus", "$bname$plus + $aname$minus", get_transitions(D, ϵ, x, y, d); kwargs...)
+	l1, up1 = transport_plot!(scene, ab_name1, ab_name2, get_transitions(D, ϵ, x, y, d); kwargs...)
 	
 	layout[1,1] = l1
 	
@@ -276,46 +327,18 @@ function transport_anim_both!(scene, a, aname, b, bname; kwargs...)
 	return layout, up
 end
 
-# ╔═╡ 64d9a390-29ba-11eb-211d-8ff252146626
-@bind t PlutoUI.Clock()
-
-# ╔═╡ 14c2f17e-29bb-11eb-3e39-d99c9eb1f1ef
-t
-
-# ╔═╡ 35e9872a-29b9-11eb-18c6-fd932571d10b
-colors = AbstractPlotting.current_default_theme()[:palette].color[]
-
 # ╔═╡ 3e51a966-2b34-11eb-035b-ddca47de3459
 signed_transport_scene, up = let
 	scene, layout = layoutscene()
-	l, u = transport_anim_both!(scene, am, "a", bm, "b"; color = colors[3])
+	l, u = transport_anim_both!(scene, am, "a", bm, "b"; ab_name1 = "a$plus", ab_name2 = "a$minus")
 	layout[1, 1] = l
 	scene, u
 end
-
-# ╔═╡ 0dcffaec-2b35-11eb-1329-197b99f7c08f
-begin
-	click
-	up(t0[] += 1)
-	t0val = t0[]
-	signed_transport_scene
-end
-
-# ╔═╡ f7c242ea-2b37-11eb-0389-07bef2f1e86c
-mod1(t0val, D isa Balanced ? 6 : 8)
 
 # ╔═╡ de79c2a2-29bf-11eb-0ba7-5574d8c69216
 begin
 	up(t)
 	signed_transport_scene
-end
-
-# ╔═╡ 9627c1f0-29d3-11eb-2871-1ba3530f91f4
-initial_final_scene = let
-	scene, layout = layoutscene()
-	layout[1,1] = barplot_pos_neg!(scene, a, "a"; color = colors[1])
-	layout[2,1] = barplot_pos_neg!(scene, b, "b"; color = colors[1])
-	scene
 end
 
 # ╔═╡ 5c626206-29b3-11eb-2cae-275536bd1ab6
@@ -329,30 +352,51 @@ function divergence(::KL{ρ}, a, b) where {ρ}
     ρ * (-entropy(a) - dot(a, lg.(b)) + sum(b - a))
 end
 
+# ╔═╡ d750b1d6-2b37-11eb-1fa1-4fad6904a144
+t0 = Ref(0)
+
+# ╔═╡ c16ae7b0-2b37-11eb-271f-791043d98a3e
+@bind click PlutoUI.Button()
+
+# ╔═╡ 0dcffaec-2b35-11eb-1329-197b99f7c08f
+begin
+	click
+	up(t0[] += 1)
+	t0val = t0[]
+	signed_transport_scene
+end
+
+# ╔═╡ f7c242ea-2b37-11eb-0389-07bef2f1e86c
+mod1(t0val, D isa Balanced ? 6 : 8)
+
 # ╔═╡ Cell order:
+# ╟─3e2f024c-2b54-11eb-38c3-494488526f66
+# ╟─be58708c-2b26-11eb-2be3-e5a5b6d06324
+# ╟─91998cc8-2b44-11eb-3e6a-090dd9a3debf
+# ╟─e86d4eb0-2b44-11eb-0ea2-c579b998317f
+# ╟─9627c1f0-29d3-11eb-2871-1ba3530f91f4
+# ╟─c728610c-2b49-11eb-1397-c91c9caf48bf
+# ╠═64d9a390-29ba-11eb-211d-8ff252146626
+# ╟─de79c2a2-29bf-11eb-0ba7-5574d8c69216
+# ╟─3975431a-2b54-11eb-0c7a-2b5d7878de97
 # ╠═535d9692-29b3-11eb-1ef4-1f3c7f559481
 # ╠═5bad3192-29b3-11eb-343d-a77cb1f89144
+# ╠═8c677950-2b48-11eb-1843-356af0ab079d
 # ╠═7ff472ae-29b3-11eb-267b-59058f5f5e85
 # ╠═f5497004-29b3-11eb-3ead-5766e13c274a
 # ╠═56ae2176-29b6-11eb-1c7f-39cd7ff91f75
 # ╠═955137ba-29b6-11eb-1efc-1b919d6dfbde
 # ╠═84af5abc-29b7-11eb-38d8-d747d7309c91
 # ╠═fdabe84e-29b8-11eb-1556-157a0847c121
-# ╠═5baf5922-29b3-11eb-2a67-ef89bd104db8
-# ╠═5bc23a06-29b3-11eb-062c-393396ede7f2
 # ╠═a38e7f08-29bc-11eb-01f3-256e6c2313f9
-# ╠═5bc343b0-29b3-11eb-3e5a-df86461a783d
-# ╠═b8e4fd28-29bc-11eb-0b85-bfbbf8a3c3d4
 # ╠═5bcbfe6a-29b3-11eb-2e7a-1bab02e6e094
+# ╠═32731c08-2b49-11eb-3358-bf9fc08f6004
+# ╠═41fffad2-2b49-11eb-2601-81a7941b0474
 # ╠═5bd681a0-29b3-11eb-0ca5-630541f87c60
 # ╠═5bfc5448-29b3-11eb-1941-d9bff0f425c6
 # ╠═c14e7db6-29b4-11eb-1687-315faa512117
-# ╠═5c0ba9fc-29b3-11eb-398e-ddd48ee94fb6
 # ╠═c532b756-2b28-11eb-2d2f-c1ca7e2046e1
 # ╠═e8185fae-2b29-11eb-1b03-d35e774da123
-# ╠═993992be-2b37-11eb-0b1c-3ff64225a3c8
-# ╠═af2f3dee-2b37-11eb-05ac-25320f758490
-# ╠═a5391d50-2b37-11eb-34f6-2f5bc3e5588c
 # ╠═5c3c6c04-29b3-11eb-2142-e344978fb8e0
 # ╠═5c480da2-29b3-11eb-1e71-fb742ec0fc67
 # ╠═3e6886d6-2b2a-11eb-1c5f-c786380bdc51
@@ -364,25 +408,28 @@ end
 # ╠═87722ef4-2b2a-11eb-1ffe-03fd75e12532
 # ╠═7cb2ec38-2b34-11eb-0131-03c09f0f3581
 # ╠═3e51a966-2b34-11eb-035b-ddca47de3459
-# ╠═d750b1d6-2b37-11eb-1fa1-4fad6904a144
-# ╠═c16ae7b0-2b37-11eb-271f-791043d98a3e
-# ╟─f7c242ea-2b37-11eb-0389-07bef2f1e86c
-# ╠═0dcffaec-2b35-11eb-1329-197b99f7c08f
-# ╠═345b8e68-2b36-11eb-02ec-f90efaf891aa
+# ╟─5baf5922-29b3-11eb-2a67-ef89bd104db8
+# ╟─5bc23a06-29b3-11eb-062c-393396ede7f2
+# ╟─5bc343b0-29b3-11eb-3e5a-df86461a783d
+# ╠═b8e4fd28-29bc-11eb-0b85-bfbbf8a3c3d4
+# ╠═4e690274-2b23-11eb-2907-5546c62231d3
 # ╠═b98a4cca-29d4-11eb-2e05-812d10497850
 # ╠═507cb14e-2b1b-11eb-36b3-a134271c47ef
 # ╠═5e3f5d40-2b1b-11eb-18e4-5557c5b69a29
-# ╠═be58708c-2b26-11eb-2be3-e5a5b6d06324
-# ╠═9627c1f0-29d3-11eb-2871-1ba3530f91f4
-# ╠═4e690274-2b23-11eb-2907-5546c62231d3
+# ╠═bd50e5fa-2b44-11eb-318f-cb0171004c46
 # ╠═b5ef9b9a-2b20-11eb-2c94-5db769d419ad
+# ╠═0001bfe2-2b49-11eb-1607-259b06c569e6
+# ╠═4d1fe84e-2b49-11eb-230f-aba60a20c75a
+# ╠═0f81c860-2b49-11eb-3113-031161588326
+# ╠═53468264-2b49-11eb-3235-d166a7cf2b54
 # ╠═ddc87348-2b21-11eb-1079-0f662e8190f5
 # ╠═14d4d918-2b2b-11eb-31a8-051e0c39ce3f
 # ╠═3ec9e128-2b35-11eb-3632-75687fc22283
-# ╠═64d9a390-29ba-11eb-211d-8ff252146626
-# ╠═14c2f17e-29bb-11eb-3e39-d99c9eb1f1ef
-# ╠═de79c2a2-29bf-11eb-0ba7-5574d8c69216
 # ╠═35e9872a-29b9-11eb-18c6-fd932571d10b
 # ╠═5c626206-29b3-11eb-2cae-275536bd1ab6
 # ╠═5c6f5238-29b3-11eb-1962-65fe06d73f08
 # ╠═5c7b5d92-29b3-11eb-2c0b-01e0dbf269a7
+# ╠═d750b1d6-2b37-11eb-1fa1-4fad6904a144
+# ╠═c16ae7b0-2b37-11eb-271f-791043d98a3e
+# ╟─f7c242ea-2b37-11eb-0389-07bef2f1e86c
+# ╠═0dcffaec-2b35-11eb-1329-197b99f7c08f
