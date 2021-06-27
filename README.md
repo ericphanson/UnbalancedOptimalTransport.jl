@@ -28,7 +28,6 @@ printed strings in
 transport methods, including the unbalanced case treated here. See also
 [#9](https://github.com/ericphanson/UnbalancedOptimalTransport.jl/issues/9).
 
-
 Other packages (warning, this list may become outdated):
 
 * <https://github.com/mirkobunse/EarthMoversDistance.jl> (wrapper of C library)
