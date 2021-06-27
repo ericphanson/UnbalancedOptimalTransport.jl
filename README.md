@@ -24,10 +24,12 @@ printed strings in
 
 # Related packages
 
-I found several other Julia implementations of algorithms related to optimal
-transport, which may be of interest to the reader. As far as I could find,
-however, none are pure-Julia and treat the unbalanced case, which prompted the
-creation of this package.
+<https://github.com/JuliaOptimalTransport/OptimalTransport.jl> provides many optimal
+transport methods, including the unbalanced case treated here. See also
+[#9](https://github.com/ericphanson/UnbalancedOptimalTransport.jl/issues/9).
+
+
+Other packages (warning, this list may become outdated):
 
 * <https://github.com/mirkobunse/EarthMoversDistance.jl> (wrapper of C library)
 * <https://github.com/mark-fangzhou-xie/JOT-Julia-Optimal-Transport> (balanced
@@ -36,5 +38,4 @@ creation of this package.
 * <https://www.numerical-tours.com/julia/> (tutorials)
 * <https://github.com/lchizat/optimal-transport> (not maintained)
 * <https://github.com/baggepinnen/SpectralDistances.jl> (uses this package for the unbalanced case!)
-* <https://github.com/zsteve/OptimalTransport.jl> (lots of methods available including the unbalanced case, some called from the POT python library; GPL v3 licensed)
 * <https://github.com/devmotion/OptimalTransport.jl> (balanced only; exact algorithm via the network simplex method)
