@@ -149,8 +149,11 @@ function OT!(
     ϵ = 1e-1;
     kwargs...,
 )
-    (; f, g) = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
-
+    # on 1.7+:
+    # (; f, g) = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+    ret = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+    f = ret.f
+    g = ret.g
     T = promote_type(eltype(a), eltype(b))
     _nφstar = q -> -φstar(D, -q)
 
@@ -245,12 +248,16 @@ function optimal_coupling!(
     kwargs...,
 )
     if !dual_potentials_populated
-        (; f, g) = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+        # on 1.7+:
+        # (f, g) = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+        ret = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+        f = ret.f
+        g = ret.g
     else
         f = a.dual_potential
         g = b.dual_potential
     end
-    
+
     return [
         exp((f[i] + g[j] - C[i, j]) / ϵ) * a.density[i] * b.density[j]
         for i in eachindex(a.density), j in eachindex(b.density)
