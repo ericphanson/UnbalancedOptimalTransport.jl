@@ -79,6 +79,11 @@ end
 
         @test OT!(D, a, b, ϵ) ≈ result.optimal_value rtol = 1e-3 atol = 1e-3
 
+        if same
+            # Also test against ourselves but `deepcopy`'ied
+            @test OT!(D, a, b, ϵ) ≈ OT!(D, a, deepcopy(b), ϵ) rtol = 1e-3 atol = 1e-3
+        end
+
         coupling_sinkhorn = optimal_coupling!(D, a, b, ϵ)
         @test result.optimal_coupling ≈ coupling_sinkhorn rtol = 1e-3 atol = 1e-3
     end

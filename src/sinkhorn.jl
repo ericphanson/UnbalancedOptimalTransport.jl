@@ -36,11 +36,14 @@ and `b` are updated to hold the optimal dual potentials. The `density`,
 * `max_iters`: the maximum number of iterations to perform.
 * `warn`: whether or not to warn when the maximum number of iterations is reached.
 
-Returns a NamedTuple of the number of iterations performed (`iters`), and the
+Returns a NamedTuple with `f` and `g`, the dual potentials of `a` and `b` respectively, the number of iterations performed (`iters`), and the
 maximum residual (`max_residual`), which is the maximum infinity norm difference
 between consecutive iterates of the dual potentials, at the end of the process.
 If `max_iters` is not reached, iteration stops when the `max_residual` falls
 below `tol`.
+
+If `a` and `b` alias, then one must use the return values of `f` and `g` rather than
+`a.dual_potential` and `b.dual_potential`.
 
 """
 function unbalanced_sinkhorn!(
@@ -58,20 +61,33 @@ function unbalanced_sinkhorn!(
     end
 
     initialize_dual_potential!(D, a)
+
+    MA = Base.mightalias(a.dual_potential, b.dual_potential) || Base.mightalias(a.cache, b.cache)
+
+    if MA
+        f = copy(a.dual_potential)
+        tmp_f = copy(a.cache)
+    else
+        f = a.dual_potential
+        tmp_f = a.cache
+    end
+
     initialize_dual_potential!(D, b)
 
-    f = a.dual_potential
-    tmp_f = a.cache
-
-    g = b.dual_potential
-    tmp_g = b.cache
+    if MA
+        g = copy(b.dual_potential)
+        tmp_g = copy(b.cache)
+    else
+        g = b.dual_potential
+        tmp_g = b.cache
+    end
 
     max_residual = Inf
     iters = 0
     while iters < max_iters && max_residual > tol
         iters += 1
         max_residual = 0.0
-        @inbounds for j in eachindex(g)
+        for j in eachindex(g)
             for i in eachindex(a.log_density, f, tmp_f)
                 tmp_f[i] = a.log_density[i] + (f[i] - C[i, j]) / ϵ
             end
@@ -83,7 +99,7 @@ function unbalanced_sinkhorn!(
             end
             g[j] = new_g
         end
-        @inbounds for j in eachindex(f)
+        for j in eachindex(f)
             for i in eachindex(b.log_density, g, tmp_g)
                 tmp_g[i] = b.log_density[i] + (g[i] - C[j, i]) / ϵ
             end
@@ -97,11 +113,16 @@ function unbalanced_sinkhorn!(
         end
     end
 
+    if MA
+        a.dual_potential .= f
+        b.dual_potential .= g
+    end
+
     if warn && iters == max_iters
         @warn "Maximum iterations ($max_iters) reached" max_residual
     end
 
-    return (iters = iters, max_residual = max_residual)
+    return (; f, g, iters, max_residual)
 end
 
 """
@@ -128,11 +149,7 @@ function OT!(
     ϵ = 1e-1;
     kwargs...,
 )
-
-    unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
-
-    f = a.dual_potential
-    g = b.dual_potential
+    (; f, g) = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
 
     T = promote_type(eltype(a), eltype(b))
     _nφstar = q -> -φstar(D, -q)
@@ -228,11 +245,12 @@ function optimal_coupling!(
     kwargs...,
 )
     if !dual_potentials_populated
-        unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+        (; f, g) = unbalanced_sinkhorn!(D, C, a, b, ϵ; kwargs...)
+    else
+        f = a.dual_potential
+        g = b.dual_potential
     end
-
-    f = a.dual_potential
-    g = b.dual_potential
+    
     return [
         exp((f[i] + g[j] - C[i, j]) / ϵ) * a.density[i] * b.density[j]
         for i in eachindex(a.density), j in eachindex(b.density)
