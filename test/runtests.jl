@@ -3,6 +3,7 @@ using UnbalancedOptimalTransport: KL, TV, RG, Balanced
 using Test
 using SCS, ECOS
 using StaticArrays
+using Convex: MOI
 
 include("Convex_formulation.jl")
 
@@ -35,37 +36,51 @@ end
 @testset "UnbalancedOptimalTransport.jl" begin
 
     # We check the implementation of the Sinkhorn algorithm against its definition as an optimization problem.
-    @testset "regularized OT! with balancing via $D" for D in TEST_DIVERGENCES
-        for ϵ ∈ (0.1, 1.0)
-            # We choose very small test problems, since solving the convex problem is relatively slow
-            # Ensure the problem is feasible
-            if D isa Balanced
-                a, b = balanced_measures(4, 3, 1; scale = 100.0)
-            else
-                a = rand_measure(4, 1; scale = 100.0)
-                b = rand_measure(3, 1; scale = 100.0)
-            end
-
-            if D isa RG
-                sc = rand() + 0.5
-                b = DiscreteMeasure(sc * sum(a.density) * b.density / sum(b.density), b.set)
-            end
-
-            # ECOS natively supports the exponential cone we need for the KL divergence
-            if D isa TV
-                solver = () -> SCS.Optimizer(verbose = 0, eps = 1e-6, max_iters = 20_000)
-            else
-                solver = () -> ECOS.Optimizer(verbose = 0, eps = 1e-6)
-            end
-
-            result = OT_convex(D, a, b, ϵ; solver = solver, verbose = true)
-
-            @test OT!(D, a, b, ϵ) ≈ result.optimal_value rtol = 1e-3 atol = 1e-3
-
-            coupling_sinkhorn = optimal_coupling!(D, a, b, ϵ)
-            @test result.optimal_coupling ≈ coupling_sinkhorn rtol = 1e-3 atol = 1e-3
-
+    @testset "regularized OT! with balancing via $D, ϵ=$ϵ, same=$same" for D in TEST_DIVERGENCES, ϵ ∈ (0.1, 1.0), same in (false, true)
+        # We choose very small test problems, since solving the convex problem is relatively slow
+        # Ensure the problem is feasible
+        if D isa Balanced
+            a, b = balanced_measures(4, 3, 1; scale = 100.0)
+        else
+            a = rand_measure(4, 1; scale = 100.0)
+            b = rand_measure(3, 1; scale = 100.0)
         end
+
+        if D isa RG
+            sc = rand() + 0.5
+            b = DiscreteMeasure(sc * sum(a.density) * b.density / sum(b.density), b.set)
+        end
+
+        # Test if aliasing is a problem
+        if same
+            # b = deepcopy(a)
+            b = a
+        end
+
+        # ECOS natively supports the exponential cone we need for the KL divergence
+        if D isa TV
+            solver = MOI.OptimizerWithAttributes(
+                SCS.Optimizer,
+                "verbose" => 0,
+                "eps_rel" => 1e-6,
+                "eps_abs" => 1e-6,
+                "max_iters" => 20_000
+            )
+        else
+            solver = MOI.OptimizerWithAttributes(
+                ECOS.Optimizer,
+                "verbose" => 0,
+                "eps_rel" => 1e-6,
+                "eps_abs" => 1e-6,
+            )
+        end
+
+        result = OT_convex(D, a, b, ϵ; solver = solver, verbose = true)
+
+        @test OT!(D, a, b, ϵ) ≈ result.optimal_value rtol = 1e-3 atol = 1e-3
+
+        coupling_sinkhorn = optimal_coupling!(D, a, b, ϵ)
+        @test result.optimal_coupling ≈ coupling_sinkhorn rtol = 1e-3 atol = 1e-3
     end
 
     @testset "Optimal coupling" begin

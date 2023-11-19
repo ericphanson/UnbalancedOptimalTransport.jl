@@ -82,7 +82,7 @@ function OT_convex(
 
     problem = minimize(obj, constraints)
 
-    solve!(problem, solver; verbose = verbose)
+    solve!(problem, solver; silent_solver=!verbose)
 
     return (optimal_value = problem.optval, optimal_coupling = evaluate(π))
 end
